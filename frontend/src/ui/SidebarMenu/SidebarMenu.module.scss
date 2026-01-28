@@ -1,0 +1,121 @@
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 380px;
+    height: 100vh;
+    background-color: #ffffff;
+    z-index: 1001;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.05);
+
+    transform: translateX(-100%);
+    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
+    &.open {
+        transform: translateX(0);
+    }
+
+    @media (max-width: 480px) {
+        width: 100%;
+    }
+}
+
+.sidebarHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 38px 30px;
+    border-bottom: 1px solid #f0f0f0;
+
+    h3 {
+        margin: 0;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+}
+
+.closeBtn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000;
+    transition: transform 0.2s ease;
+
+    &:hover {
+        transform: rotate(90deg);
+    }
+}
+
+.sidebarContent {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 30px;
+
+    &::-webkit-scrollbar {
+        width: 4px;
+    }
+    &::-webkit-scrollbar-thumb {
+        background: #eee;
+    }
+}
+
+.categoryBlock {
+    margin-bottom: 32px;
+}
+
+.masterCategory {
+    text-transform: uppercase;
+    color: #111;
+    margin-bottom: 16px;
+    letter-spacing: 0.5px;
+}
+
+.subList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+
+    li {
+        margin-bottom: 5px;
+
+        a {
+            text-decoration: none;
+            color: #343333;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            display: inline-block;
+
+            &:hover {
+                color: #000;
+                transform: translateX(5px);
+            }
+        }
+    }
+}
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(2px); // Легкое размытие фона
+    z-index: 1000;
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}

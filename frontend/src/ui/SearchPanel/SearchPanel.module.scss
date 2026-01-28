@@ -1,0 +1,86 @@
+.searchPanel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 450px;
+    height: 100vh;
+    background: var(--white);
+    z-index: 2000;
+    padding: 30px;
+    box-shadow: -5px 0 20px rgba(0, 0, 0, 0.1);
+    animation: slideIn 0.3s ease-out;
+}
+
+.inputWrapper {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid var(--dark-grey);
+    padding-bottom: 10px;
+    gap: 15px;
+
+    input {
+        flex: 1;
+        border: none;
+        outline: none;
+        font-size: 18px;
+    }
+}
+
+.clearBtn {
+    background: none;
+    border: none;
+    font-size: 14px;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--mid-grey);
+}
+
+.closeBtn {
+    background: none;
+    border: none;
+    font-size: 12px;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--mid-grey);
+}
+
+.resultsList {
+    margin-top: 30px;
+    display: flex;
+    flex-direction: column;
+}
+
+.resultItem {
+    padding: 12px 0;
+    text-decoration: none;
+    color: #666;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--white3);
+
+    &:hover {
+        color: #000;
+        background: var(--white3);
+    }
+
+    .match {
+        color: var(--dark-grey);
+        font-weight: 700;
+    }
+}
+
+.overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 1999;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+    }
+    to {
+        transform: translateX(0);
+    }
+}

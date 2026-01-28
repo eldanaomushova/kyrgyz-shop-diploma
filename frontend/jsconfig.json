@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+        "baseUrl": "src",
+        "paths": {
+            "@assets/*": ["assets/*"],
+            "@pages/*": ["pages/*"],
+            "@utils/*": ["utils/*"],
+            "@modules/*": ["modules/*"],
+            "@ui/*": ["ui/*"],
+            "@app/*": ["app/*"],
+            "@Mixins": ["src/Assets/Styles/Mixins.scss"]
+        }
+    }
+}

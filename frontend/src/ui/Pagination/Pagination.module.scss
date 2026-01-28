@@ -1,0 +1,59 @@
+.paginationContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin: 50px 0;
+    padding: 20px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.pages {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.pageItem {
+    background: none;
+    border: none;
+    font-size: 14px;
+    color: #222;
+    cursor: pointer;
+    min-width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+
+    &.active {
+        font-weight: 700;
+        border-bottom: 2px solid #222; // Акцент на текущей странице
+    }
+
+    &.dots {
+        cursor: default;
+        &:hover {
+            color: #222;
+        }
+    }
+
+    &:hover {
+        color: #888;
+    }
+}
+
+.arrow {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #222;
+    padding: 0 10px;
+
+    &:disabled {
+        color: #ccc;
+        cursor: not-allowed;
+    }
+}

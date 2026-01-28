@@ -1,0 +1,64 @@
+@import url("https://fonts.googleapis.com/css2?family=Golos+Text:wght@400..900&family=Montserrat:wght@300;400;500;600&family=Inter:wght@400;500&display=swap");
+
+$font-family-montserrat: "Montserrat", sans-serif;
+$font-family-playfair: "Golos Text", sans-serif;
+
+$font-weight-black: 700;
+$font-weight-thick: 600;
+$font-weight-bold: 500;
+$font-weight-semibold: 400;
+$font-weight-medium: 300;
+
+$line-height: 140%;
+$line-height-small: 120%;
+
+h1 {
+    font-family: $font-family-montserrat;
+    font-weight: $font-weight-black;
+    font-size: 48px;
+    line-height: $line-height-small;
+    cursor: default;
+}
+h2 {
+    font-family: $font-family-playfair;
+    font-weight: $font-weight-thick;
+    font-size: 48px;
+    line-height: $line-height-small;
+    cursor: default;
+}
+
+h3 {
+    font-family: $font-family-playfair;
+    font-weight: $font-weight-bold;
+    font-size: 36px;
+    line-height: $line-height-small;
+    cursor: default;
+}
+h3 {
+    font-family: $font-family-playfair;
+    font-weight: $font-weight-bold;
+    font-size: 28px;
+    line-height: $line-height-small;
+    cursor: default;
+}
+h4 {
+    font-family: $font-family-playfair;
+    font-weight: $font-weight-bold;
+    font-size: 36px;
+    line-height: $line-height-small;
+    cursor: default;
+}
+h5 {
+    font-family: $font-family-playfair;
+    font-weight: $font-weight-bold;
+    font-size: 20px;
+    line-height: $line-height-small;
+    cursor: default;
+}
+p {
+    font-family: $font-family-playfair;
+    font-weight: $font-weight-bold;
+    font-size: 16px;
+    line-height: $line-height-small;
+    cursor: default;
+}

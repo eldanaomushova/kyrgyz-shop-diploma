@@ -1,0 +1,222 @@
+.header {
+    width: 100%;
+    font-family: "Helvetica", sans-serif;
+    border-bottom: 1px solid var(--white3);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: var(--white);
+}
+
+.containerMain {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 1440px;
+    padding: 20px 40px;
+    margin: 0 auto;
+}
+.containerSecond {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 540px;
+    padding: 20px 40px;
+}
+.container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 1200px;
+}
+
+.logo {
+    font-weight: bold;
+    font-size: 24px;
+    letter-spacing: 2px;
+
+    a {
+        color: var(--logo-color);
+        text-decoration: none;
+    }
+}
+
+.navList {
+    display: flex;
+    list-style: none;
+    gap: 20px;
+
+    a {
+        text-decoration: none;
+        color: var(--dark-grey);
+        font-size: 14px;
+        font-weight: 500;
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+
+    .sale {
+        color: var(--logo-color);
+    }
+}
+
+.actions {
+    display: flex;
+    gap: 15px;
+
+    .actionBtn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        color: var(--dark-grey);
+
+        &:hover {
+            opacity: 0.7;
+        }
+    }
+}
+
+.burger {
+    display: none;
+}
+
+.navBtn {
+    background: none;
+    border: none;
+    font-size: 16px;
+    font-family: inherit;
+    cursor: pointer;
+    color: #333;
+    padding: 5px 10px;
+    position: relative;
+    transition: color 0.2s ease;
+
+    &:hover {
+        color: #000;
+        text-shadow:
+            0.5px 0 0 currentColor,
+            -0.5px 0 0 currentColor;
+    }
+}
+.burger {
+    display: none;
+    @media (max-width: 768px) {
+        display: block;
+    }
+}
+.actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.searchWrapper {
+    display: flex;
+    align-items: center;
+    transition: all 0.3s ease;
+
+    &.active {
+        background: #f5f5f5;
+        border-radius: 20px;
+        padding: 2px 10px;
+    }
+}
+
+.searchInput {
+    border: none;
+    background: transparent;
+    outline: none;
+    padding: 5px 10px;
+    width: 200px; // Ширина поля при раскрытии
+    font-size: 14px;
+    animation: slideIn 0.2s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        width: 0;
+        opacity: 0;
+    }
+    to {
+        width: 200px;
+        opacity: 1;
+    }
+}
+
+.iconBtn {
+    // Ваши существующие стили для кнопок
+    &:hover {
+        background: rgba(0, 0, 0, 0.05);
+        border-radius: 50%;
+    }
+}
+.actions {
+    display: flex;
+    align-items: center;
+    gap: 10px; // Чуть уменьшил отступ для компактности
+}
+
+.searchWrapper {
+    display: flex;
+    align-items: center;
+    border-radius: 20px;
+    transition: background 0.3s ease;
+
+    &.active {
+        background: #f0f0f0;
+        padding-left: 12px;
+    }
+}
+
+.searchInput {
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 14px;
+    width: 150px; // Достаточно места для ввода
+    animation: expand 0.3s ease-out;
+}
+
+@keyframes expand {
+    from {
+        width: 0;
+        opacity: 0;
+    }
+    to {
+        width: 150px;
+        opacity: 1;
+    }
+}
+
+.iconBtn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+
+    &:hover {
+        background: rgba(0, 0, 0, 0.05);
+    }
+}
+@media (max-width: 768px) {
+    .nav {
+        display: none;
+        &.active {
+            display: block;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background: var(--white);
+        }
+    }
+    .burger {
+        display: block;
+    }
+}

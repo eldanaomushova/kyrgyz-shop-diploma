@@ -1,3 +1,4 @@
+from django.shortcuts import get_object_or_404
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -88,3 +89,11 @@ def get_full_categories_tree(request):
             tree[gender][sub].append(art_type)
 
     return Response(tree)
+
+
+@api_view(['GET'])
+def get_product_detail(request, pk):
+    product = get_object_or_404(Product, product_id=pk) 
+
+    serializer = ProductSerializer(product)
+    return Response(serializer.data)

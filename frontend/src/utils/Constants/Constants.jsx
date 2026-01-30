@@ -5,6 +5,7 @@ export const PATH = {
     home: "/",
     catalog: "/catalog",
     error500: "/500",
+    product: "/product",
 };
 
 export const NavLinks = [];

@@ -1,0 +1,132 @@
+.wrapper {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 60px;
+    align-items: start;
+
+    @media (max-width: 900px) {
+        grid-template-columns: 1fr;
+    }
+}
+
+.imageGallery {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    overflow: hidden;
+    position: sticky;
+    top: 20px;
+
+    .mainImage {
+        width: 100%;
+        max-width: 550px;
+        margin-top: -90px;
+    }
+}
+
+.infoSidebar {
+    position: sticky;
+    top: 20px;
+
+    .header {
+        margin-bottom: 30px;
+
+        .title {
+            font-size: 24px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+            color: #222;
+        }
+
+        .price {
+            font-size: 20px;
+            font-weight: 600;
+            color: #222;
+        }
+    }
+}
+
+.label {
+    font-size: 14px;
+    margin-bottom: 20px;
+    span {
+        font-weight: 600;
+    }
+}
+
+.details {
+    border-top: 1px solid #e0e0e0;
+    padding-top: 20px;
+    margin-bottom: 30px;
+
+    .detailItem {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 13px;
+
+        .detailLabel {
+            color: #666;
+        }
+        .detailValue {
+            font-weight: 500;
+        }
+    }
+}
+
+.addToCart {
+    width: 100%;
+    padding: 16px;
+    background-color: #222;
+    color: white;
+    border: none;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-bottom: 40px;
+
+    &:hover {
+        background-color: #444;
+    }
+}
+
+.description {
+    .h4text {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 15px;
+        text-transform: uppercase;
+    }
+    .ptext {
+        margin-bottom: 15px;
+    }
+
+    li {
+        font-size: 14px;
+        line-height: 1.6;
+        color: #444;
+        margin-bottom: 10px;
+    }
+
+    ul {
+        padding-left: 20px;
+        list-style-type: disc;
+    }
+}
+
+.loader,
+.error {
+    text-align: center;
+    padding: 100px;
+    font-size: 18px;
+}

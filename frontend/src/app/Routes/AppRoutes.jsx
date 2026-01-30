@@ -3,6 +3,7 @@ import { PATH } from "../../utils/Constants/Constants";
 import { HomePage } from "../../pages/HomePage/HomePage";
 import { Layout } from "../../app/Layout/Layout";
 import { CatalogPage } from "../../pages/CatalogPage/CatalogPage";
+import { ProductDetailPage } from "../../pages/ProductDetailPage/ProductDetailPage";
 
 export const AppRouter = createBrowserRouter([
     {
@@ -16,6 +17,10 @@ export const AppRouter = createBrowserRouter([
             {
                 path: PATH.catalog,
                 element: <CatalogPage />,
+            },
+            {
+                path: "/product/:id",
+                element: <ProductDetailPage />,
             },
         ],
     },

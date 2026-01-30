@@ -34,17 +34,10 @@ h3 {
     line-height: $line-height-small;
     cursor: default;
 }
-h3 {
-    font-family: $font-family-playfair;
-    font-weight: $font-weight-bold;
-    font-size: 28px;
-    line-height: $line-height-small;
-    cursor: default;
-}
 h4 {
     font-family: $font-family-playfair;
     font-weight: $font-weight-bold;
-    font-size: 36px;
+    font-size: 28px;
     line-height: $line-height-small;
     cursor: default;
 }
@@ -52,6 +45,13 @@ h5 {
     font-family: $font-family-playfair;
     font-weight: $font-weight-bold;
     font-size: 20px;
+    line-height: $line-height-small;
+    cursor: default;
+}
+h6 {
+    font-family: $font-family-playfair;
+    font-weight: $font-weight-bold;
+    font-size: 18px;
     line-height: $line-height-small;
     cursor: default;
 }

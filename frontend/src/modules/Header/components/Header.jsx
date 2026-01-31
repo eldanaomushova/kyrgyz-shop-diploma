@@ -1,14 +1,20 @@
 import { useState } from "react";
 import styles from "./Header.module.scss";
 import { Button } from "../../../ui/Buttons/Button";
-import { ShoppingBag, User, Search, X } from "lucide-react";
+import { ShoppingBag, User, Search } from "lucide-react";
 import { SidebarMenu } from "../../../ui/SidebarMenu/SidebarMenu";
 import { SearchPanel } from "../../../ui/SearchPanel/SearchPanel";
+import { useNavigate } from "react-router-dom";
+import { PATH } from "../../../utils/Constants/Constants";
+import { useCart } from "../../../modules/CartProvider/CartProvider";
 
 export const Header = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [activeGender, setActiveGender] = useState("");
     const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const navigate = useNavigate();
+    const { cart } = useCart();
+    const cartCount = cart.length;
 
     const openCategories = (gender) => {
         setActiveGender(gender);
@@ -86,8 +92,15 @@ export const Header = () => {
                             <Button
                                 variant="icon"
                                 icon={<ShoppingBag size={16} />}
-                                className={styles.iconBtn}
-                            />
+                                onClick={() => navigate(PATH.cart)}
+                                className={styles.cartIconWrapper}
+                            >
+                                {cartCount > 0 && (
+                                    <span className={styles.badge}>
+                                        {cartCount}
+                                    </span>
+                                )}
+                            </Button>
                         </div>
                     </div>
                 </div>

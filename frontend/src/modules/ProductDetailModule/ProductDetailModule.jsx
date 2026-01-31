@@ -2,12 +2,32 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import styles from "./ProductDetailModule.module.scss";
 import { Typography } from "../../ui/Typography/Typography";
+import { useCart } from "../../modules/CartProvider/CartProvider";
+import Swal from "sweetalert2";
 
 export const ProductDetailModule = () => {
     const { id } = useParams();
-    console.log(id);
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
+    const { addToCart } = useCart();
+
+    const handleAddToCart = () => {
+        if (product) {
+            addToCart(product);
+            Swal.fire({
+                title: "Кошулду!",
+                text: `${product.productDisplayName} себетке ийгиликтүү кошулду.`,
+                icon: "success",
+                toast: true,
+                position: "top-end",
+                showConfirmButton: false,
+                timer: 1000,
+                timerProgressBar: true,
+                background: "#fff",
+                color: "#333",
+            });
+        }
+    };
 
     useEffect(() => {
         const fetchProduct = async () => {
@@ -15,7 +35,6 @@ export const ProductDetailModule = () => {
                 const response = await fetch(
                     `http://127.0.0.1:8000/api/products/detail/${id}/`
                 );
-                console.log(id);
                 if (!response.ok) throw new Error("Product not found");
                 const data = await response.json();
                 setProduct(data);
@@ -94,7 +113,12 @@ export const ProductDetailModule = () => {
                         </div>
                     </div>
 
-                    <button className={styles.addToCart}>Себетке кошуу</button>
+                    <button
+                        className={styles.addToCart}
+                        onClick={handleAddToCart}
+                    >
+                        Себетке кошуу
+                    </button>
 
                     <div className={styles.description}>
                         <Typography variant="h4" className={styles.h4text}>

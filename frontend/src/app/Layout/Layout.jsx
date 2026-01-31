@@ -2,6 +2,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import { Header } from "../../modules/Header/components/Header";
 import { Footer } from "../../modules/Footer/components/Footer";
 import { useEffect } from "react";
+import { CartProvider } from "../../modules/CartProvider/CartProvider";
 
 export const Layout = () => {
     const location = useLocation();
@@ -11,11 +12,13 @@ export const Layout = () => {
     }, [location]);
     return (
         <div>
-            <Header />
-            <main>
-                <Outlet />
-            </main>
-            <Footer />
+            <CartProvider>
+                <Header />
+                <main>
+                    <Outlet />
+                </main>
+                <Footer />
+            </CartProvider>
         </div>
     );
 };

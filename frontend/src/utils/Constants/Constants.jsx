@@ -6,6 +6,8 @@ export const PATH = {
     catalog: "/catalog",
     error500: "/500",
     product: "/product",
+    cart: "/cart",
+    favourite: "/favrourite",
 };
 
 export const NavLinks = [];

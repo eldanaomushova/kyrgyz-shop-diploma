@@ -8,6 +8,8 @@ export const PATH = {
     product: "/product",
     cart: "/cart",
     favourite: "/favrourite",
+    signin: "signin",
+    signup: "signup",
 };
 
 export const NavLinks = [];

@@ -24,7 +24,7 @@ export const Button = ({
             disabled={disabled}
             style={{
                 color,
-                width: width || "auto",
+                width: width ? width : undefined,
                 height: height || "auto",
                 "--hover-color": hoverColor || "initial",
                 "--active-color": activeColor || "initial",

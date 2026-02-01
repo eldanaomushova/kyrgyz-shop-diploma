@@ -26,6 +26,7 @@ export const Typography = ({
         h5: "h5",
         h6: "h6",
         p: "p",
+        psmall: "p",
     };
 
     const classNameGenerated = [styles[variant], styles[weight], className]

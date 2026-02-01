@@ -1,10 +1,12 @@
 from django.shortcuts import get_object_or_404
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.decorators import api_view
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from .serializers import ProductSerializer
 from .models import Product, CartItem
 from rest_framework import status
+from django.contrib.auth.models import User
+from rest_framework.decorators import api_view, permission_classes
 
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 12
@@ -155,3 +157,30 @@ def cart_item_detail(request, pk):
             return Response({"message": "Updated", "quantity": item.quantity})
         
         return Response({"error": "No quantity provided"}, status=400)
+    
+    
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def register_user(request):
+    username = request.data.get('username')
+    password = request.data.get('password')
+    email = request.data.get('email')
+    
+    first_name = request.data.get('firstName', '') 
+    last_name = request.data.get('lastName', '')
+
+    if not username or not password:
+        return Response({"error": "Username and password required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    if User.objects.filter(username=username).exists():
+        return Response({"error": "User already exists"}, status=status.HTTP_400_BAD_REQUEST)
+
+    user = User.objects.create_user(
+        username=username, 
+        password=password, 
+        email=email,
+        first_name=first_name,
+        last_name=last_name
+    )
+    
+    return Response({"message": "User created successfully"}, status=status.HTTP_201_CREATED)

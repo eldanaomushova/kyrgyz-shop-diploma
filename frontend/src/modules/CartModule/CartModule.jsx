@@ -4,6 +4,7 @@ import styles from "./CartModule.module.scss";
 import trash from "../../assets/Icons/trash.png";
 import visa from "../../assets/Icons/visa.png";
 import mbank from "../../assets/Icons/mbank.png";
+import { Button } from "../../ui/Buttons/Button";
 
 export const CartModule = () => {
     const { cart, removeFromCart, updateQuantity } = useCart();
@@ -113,9 +114,7 @@ export const CartModule = () => {
                         <span>Жалпы сумма</span>
                         <span>{total} сом</span>
                     </div>
-
-                    <button className={styles.checkoutBtn}>Төлөмгө өтүү</button>
-
+                    <Button variant="blackButton" text="Төлөмгө өтүү" />
                     <div className={styles.paymentIcons}>
                         <img src={visa} alt="Visa" />
                         <img
@@ -124,18 +123,10 @@ export const CartModule = () => {
                             style={{ filter: "none", opacity: 1 }}
                         />
                     </div>
-
-                    <p
-                        style={{
-                            fontSize: "11px",
-                            color: "#666",
-                            marginTop: "20px",
-                            textAlign: "center",
-                        }}
-                    >
+                    <Typography variant="psmall">
                         Баалар жана жеткирүү акысы төлөмдү ырастоо учурунда
                         такталат.
-                    </p>
+                    </Typography>
                 </div>
             </div>
         </div>

@@ -8,4 +8,5 @@ urlpatterns = [
     path('full-categories-tree/', views.get_full_categories_tree, name='full-categories-tree'),
     path('cart/', views.cart_operations, name='cart-operations'),
     path('cart/<int:pk>/', views.cart_item_detail, name='cart_item_detail'),
+    path('register/', views.register_user, name='register'),
 ]

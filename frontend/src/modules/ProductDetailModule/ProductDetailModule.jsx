@@ -4,6 +4,7 @@ import styles from "./ProductDetailModule.module.scss";
 import { Typography } from "../../ui/Typography/Typography";
 import { useCart } from "../../modules/CartProvider/CartProvider";
 import Swal from "sweetalert2";
+import { Button } from "../../ui/Buttons/Button";
 
 export const ProductDetailModule = () => {
     const { id } = useParams();
@@ -113,12 +114,11 @@ export const ProductDetailModule = () => {
                         </div>
                     </div>
 
-                    <button
-                        className={styles.addToCart}
+                    <Button
+                        variant="blackButton"
+                        text="Себетке кошуу"
                         onClick={handleAddToCart}
-                    >
-                        Себетке кошуу
-                    </button>
+                    />
 
                     <div className={styles.description}>
                         <Typography variant="h4" className={styles.h4text}>

@@ -5,6 +5,8 @@ import { Layout } from "../../app/Layout/Layout";
 import { CatalogPage } from "../../pages/CatalogPage/CatalogPage";
 import { ProductDetailPage } from "../../pages/ProductDetailPage/ProductDetailPage";
 import { CartPage } from "../../pages/CartPage/CartPage";
+import { SigninPage } from "../../pages/AuthPage/SigninPage";
+import { SignupPage } from "../../pages/AuthPage/SignupPage";
 
 export const AppRouter = createBrowserRouter([
     {
@@ -26,6 +28,14 @@ export const AppRouter = createBrowserRouter([
             {
                 path: "/cart",
                 element: <CartPage />,
+            },
+            {
+                path: "/signin",
+                element: <SigninPage />,
+            },
+            {
+                path: "/signup",
+                element: <SignupPage />,
             },
         ],
     },

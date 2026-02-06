@@ -5,6 +5,8 @@ import { Button } from "../../../ui/Buttons/Button";
 import styles from "./AuthModule.module.scss";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import { PATH } from "../../../utils/Constants/Constants";
 
 export const SignupModule = () => {
     const [form, setForm] = useState({
@@ -26,7 +28,7 @@ export const SignupModule = () => {
     };
 
     const validatePassword = (pass) => {
-        const regex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
+        const regex = /^[A-Za-z0-9]{8,}$/;
         return regex.test(pass);
     };
 
@@ -62,11 +64,17 @@ export const SignupModule = () => {
             setTimeout(() => navigate("/signin"), 1500);
         }
     };
+    useEffect(() => {
+        if (actions.clearError) {
+            actions.clearError();
+        } else {
+        }
+    }, []);
 
     return (
         <div className={styles.authWrapper}>
             <div className={styles.authContainer}>
-                <Typography variant="h2">Аккаунтту түзүү</Typography>
+                <Typography variant="h3">Аккаунтту түзүү</Typography>
 
                 <form className={styles.form} onSubmit={handleSignup}>
                     <input
@@ -133,6 +141,24 @@ export const SignupModule = () => {
                         width="100%"
                         type="submit"
                     />
+                    <div
+                        className={styles.redirectLink}
+                        style={{ marginTop: "20px", textAlign: "center" }}
+                    >
+                        <Typography variant="psmall">
+                            Аккаунтуңуз барбы?{" "}
+                            <span
+                                onClick={() => navigate(PATH.signin)}
+                                style={{
+                                    fontWeight: "bold",
+                                    cursor: "pointer",
+                                    textDecoration: "underline",
+                                }}
+                            >
+                                Кирүү
+                            </span>
+                        </Typography>
+                    </div>
                 </form>
             </div>
         </div>

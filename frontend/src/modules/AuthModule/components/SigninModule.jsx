@@ -5,6 +5,7 @@ import { Typography } from "../../../ui/Typography/Typography";
 import { Button } from "../../../ui/Buttons/Button";
 import Swal from "sweetalert2";
 import styles from "./AuthModule.module.scss";
+import { PATH } from "../../../utils/Constants/Constants";
 
 export const SigninModule = () => {
     const [form, setForm] = useState({ username: "", password: "" });
@@ -19,10 +20,10 @@ export const SigninModule = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Use the credentials from local state
-        await actions.login(form);
+        // Пытаемся выполнить вход
+        const result = await actions.login(form);
 
-        // Check if login was successful (Zustand will have set the user)
+        // 1. Проверяем, успешен ли вход (наличие токена)
         if (localStorage.getItem("token")) {
             Swal.fire({
                 title: "Ийгиликтүү!",
@@ -32,13 +33,31 @@ export const SigninModule = () => {
                 timer: 2000,
             });
             navigate("/");
+            return;
+        }
+
+        if (!localStorage.getItem("token")) {
+            Swal.fire({
+                title: "Аккаунт табылган жок",
+                text: "Мындай колдонуучу катталган эмес. Катталууну каалайсызбы?",
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonText: "Катталуу",
+                cancelButtonText: "Кайра аракет кылуу",
+                confirmButtonColor: "#000",
+                cancelButtonColor: "#d33",
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    navigate(PATH.signup);
+                }
+            });
         }
     };
 
     return (
         <div className={styles.authWrapper}>
             <div className={styles.authContainer}>
-                <Typography variant="h2">Кирүү</Typography>
+                <Typography variant="h3">Кирүү</Typography>
 
                 <form className={styles.form} onSubmit={handleSubmit}>
                     <div className={styles.inputGroup}>

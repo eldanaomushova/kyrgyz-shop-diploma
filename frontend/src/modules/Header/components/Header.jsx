@@ -87,6 +87,7 @@ export const Header = () => {
                             <Button
                                 variant="icon"
                                 icon={<User size={18} />}
+                                onClick={() => navigate(PATH.signin)}
                                 className={styles.iconBtn}
                             />
                             <Button

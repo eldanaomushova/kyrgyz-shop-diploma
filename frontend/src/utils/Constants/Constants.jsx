@@ -7,9 +7,9 @@ export const PATH = {
     error500: "/500",
     product: "/product",
     cart: "/cart",
-    favourite: "/favrourite",
-    signin: "signin",
-    signup: "signup",
+    favourite: "/favourite",
+    signin: "/signin",
+    signup: "/signup",
 };
 
 export const NavLinks = [];

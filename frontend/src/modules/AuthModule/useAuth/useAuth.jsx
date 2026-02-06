@@ -30,5 +30,6 @@ export const useAuth = create((set) => ({
                 set({ error: "Registration failed", loading: false });
             }
         },
+        clearError: () => set({ error: null }),
     },
 }));

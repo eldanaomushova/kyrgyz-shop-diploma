@@ -4,17 +4,32 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from .serializers import ProductSerializer
 from .models import Product, CartItem
-from rest_framework import status
 from django.contrib.auth.models import User
 from rest_framework.decorators import api_view, permission_classes
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers, status
+from django.contrib.auth import authenticate
+from rest_framework_simplejwt.tokens import RefreshToken
+
+
+class RegisterSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField()
+    email = serializers.EmailField()
+    firstName = serializers.CharField(required=False)
+    lastName = serializers.CharField(required=False)
 
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 12
     page_size_query_param = 'page_size'
     max_page_size = 100
-
-from rest_framework.response import Response 
-
+    
+    
+class LoginSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField()
+    
+    
 @api_view(['GET'])
 def get_products(request):
     queryset = Product.objects.all().order_by('id')
@@ -159,6 +174,13 @@ def cart_item_detail(request, pk):
         return Response({"error": "No quantity provided"}, status=400)
     
     
+@extend_schema(
+    request=RegisterSerializer,
+    responses={201: {"message": "User created successfully"}},
+    description="Registers a new user into the system.",
+    tags=['Authentication']
+)
+    
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def register_user(request):
@@ -184,3 +206,33 @@ def register_user(request):
     )
     
     return Response({"message": "User created successfully"}, status=status.HTTP_201_CREATED)
+
+
+
+@extend_schema(
+    request=LoginSerializer,
+    responses={200: dict},
+    description="Login to get Access and Refresh tokens",
+    tags=['Authentication']
+)
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def login_user(request):
+    username = request.data.get('username')
+    password = request.data.get('password')
+
+    user = authenticate(username=username, password=password)
+
+    if user is not None:
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email
+            }
+        }, status=status.HTTP_200_OK)
+    
+    return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)

@@ -5,22 +5,49 @@ import { Button } from "../../../ui/Buttons/Button";
 import styles from "./AuthModule.module.scss";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
-import { PATH } from "../../../utils/Constants/Constants";
 
 export const SignupModule = () => {
     const [form, setForm] = useState({
         username: "",
         email: "",
         password: "",
+        confirmPassword: "",
         firstName: "",
         lastName: "",
     });
+
+    const [validationError, setValidationError] = useState("");
     const { loading, error, actions } = useAuth();
     const navigate = useNavigate();
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setForm((prev) => ({ ...prev, [name]: value }));
+        if (validationError) setValidationError("");
+    };
+
+    const validatePassword = (pass) => {
+        const regex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
+        return regex.test(pass);
+    };
 
     const handleSignup = async (e) => {
         e.preventDefault();
+        setValidationError("");
+
+        if (form.password !== form.confirmPassword) {
+            setValidationError("Паролдор бири-бирине дал келбейт!");
+            return;
+        }
+
+        if (!validatePassword(form.password)) {
+            setValidationError(
+                "Пароль кеминде 8 белгиден туруп, тамга жана сан камтышы керек!"
+            );
+            return;
+        }
+
         const result = await actions.register(form);
+
         if (result?.success) {
             Swal.fire({
                 title: "Кошулду!",
@@ -31,12 +58,8 @@ export const SignupModule = () => {
                 showConfirmButton: false,
                 timer: 2000,
                 timerProgressBar: true,
-                background: "#fff",
-                color: "#333",
             });
-            setTimeout(() => {
-                navigate("/signin");
-            }, 1500);
+            setTimeout(() => navigate("/signin"), 1500);
         }
     };
 
@@ -48,46 +71,58 @@ export const SignupModule = () => {
                 <form className={styles.form} onSubmit={handleSignup}>
                     <input
                         type="text"
+                        name="username"
                         placeholder="Колдонуучу аты"
                         required
-                        onChange={(e) =>
-                            setForm({ ...form, username: e.target.value })
-                        }
+                        value={form.username}
+                        onChange={handleChange}
                     />
                     <input
                         type="text"
+                        name="firstName"
                         placeholder="Аты"
-                        onChange={(e) =>
-                            setForm({ ...form, firstName: e.target.value })
-                        }
+                        value={form.firstName}
+                        onChange={handleChange}
                     />
                     <input
                         type="text"
+                        name="lastName"
                         placeholder="Фамилия"
-                        onChange={(e) =>
-                            setForm({ ...form, lastName: e.target.value })
-                        }
+                        value={form.lastName}
+                        onChange={handleChange}
                     />
                     <input
                         type="email"
+                        name="email"
                         placeholder="Email"
                         required
-                        onChange={(e) =>
-                            setForm({ ...form, email: e.target.value })
-                        }
+                        value={form.email}
+                        onChange={handleChange}
                     />
                     <input
                         type="password"
+                        name="password"
                         placeholder="Пароль"
                         required
-                        onChange={(e) =>
-                            setForm({ ...form, password: e.target.value })
-                        }
+                        value={form.password}
+                        onChange={handleChange}
+                    />
+                    <input
+                        type="password"
+                        name="confirmPassword"
+                        placeholder="Паролду кайталаңыз"
+                        required
+                        value={form.confirmPassword}
+                        onChange={handleChange}
                     />
 
-                    {error && (
-                        <Typography variant="psmall" className={styles.error}>
-                            {error}
+                    {(validationError || error) && (
+                        <Typography
+                            variant="psmall"
+                            className={styles.error}
+                            style={{ color: "red" }}
+                        >
+                            {validationError || error}
                         </Typography>
                     )}
 
@@ -96,6 +131,7 @@ export const SignupModule = () => {
                         disabled={loading}
                         text={loading ? "Жүктөлүүдө..." : "Катталуу"}
                         width="100%"
+                        type="submit"
                     />
                 </form>
             </div>

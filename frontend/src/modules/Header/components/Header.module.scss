@@ -76,6 +76,13 @@
             opacity: 0.7;
         }
     }
+    .logout {
+        margin-right: -10px;
+        color: var(--dark-grey);
+        &:hover {
+            opacity: 0.7;
+        }
+    }
 }
 
 .burger {

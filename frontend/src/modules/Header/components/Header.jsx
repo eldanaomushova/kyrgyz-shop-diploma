@@ -7,6 +7,7 @@ import { SearchPanel } from "../../../ui/SearchPanel/SearchPanel";
 import { useNavigate } from "react-router-dom";
 import { PATH } from "../../../utils/Constants/Constants";
 import { useCart } from "../../../modules/CartProvider/CartProvider";
+import { useAuth } from "../../../modules/AuthModule/useAuth/useAuth";
 
 export const Header = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -15,10 +16,26 @@ export const Header = () => {
     const navigate = useNavigate();
     const { cart } = useCart();
     const cartCount = cart.length;
+    const { actions } = useAuth();
 
     const openCategories = (gender) => {
         setActiveGender(gender);
         setIsSidebarOpen(true);
+    };
+    const isAuthenticated = !!localStorage.getItem("token");
+
+    const handleLogout = () => {
+        // 1. Удаляем данные из хранилища
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+
+        // 2. Если в useAuth есть экшен для логаута, вызываем его
+        if (actions.logout) {
+            actions.logout();
+        }
+
+        // 3. Уходим на страницу входа
+        navigate(PATH.signin || "/signin");
     };
 
     return (
@@ -78,6 +95,16 @@ export const Header = () => {
                         </div>
 
                         <div className={styles.actions}>
+                            {isAuthenticated && (
+                                <Button
+                                    variant="text"
+                                    text="Чыгуу"
+                                    onClick={handleLogout}
+                                    width="90px"
+                                    className={styles.logout}
+                                />
+                            )}
+
                             <Button
                                 variant="icon"
                                 icon={<Search size={18} />}

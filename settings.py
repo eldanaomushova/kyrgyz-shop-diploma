@@ -12,10 +12,22 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 from datetime import timedelta
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
+# Mbank Configuration
+MBANK_MERCHANT_ID = os.getenv('MBANK_MERCHANT_ID', 'your_test_merchant_id')
+MBANK_MERCHANT_SECRET = os.getenv('MBANK_MERCHANT_SECRET', 'your_test_secret')
+
+# Frontend and API URLs
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+API_URL = os.getenv('API_URL', 'http://localhost:8000')
+
+# Add requests library to requirements
+# pip install requests
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
@@ -41,19 +53,19 @@ INSTALLED_APPS = [
     'api',
     'drf_spectacular',
 ]
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
 }
 
-SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-    'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
-    'AUTH_HEADER_TYPES': ('Bearer',),
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.SessionAuthentication',
+    ),
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 MIDDLEWARE = [
@@ -95,14 +107,13 @@ WSGI_APPLICATION = 'core.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'eldanaomusova',  # Имя базы со скриншота
-        'USER': 'eldanaomusova',  # По умолчанию имя пользователя совпадает
-        'PASSWORD': '',           # В Postgres.app по умолчанию пароля нет
+        'NAME': 'diploma_db',
+        'USER': 'eldana',
+        'PASSWORD': '654321',
         'HOST': '127.0.0.1',
-        'PORT': '5434',
+        'PORT': '5432',
     }
 }
-
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 

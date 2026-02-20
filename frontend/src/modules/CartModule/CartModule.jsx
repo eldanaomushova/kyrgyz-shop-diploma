@@ -3,11 +3,13 @@ import { Typography } from "../../ui/Typography/Typography";
 import styles from "./CartModule.module.scss";
 import trash from "../../assets/Icons/trash.png";
 import visa from "../../assets/Icons/visa.png";
-import mbank from "../../assets/Icons/mbank.png";
 import { Button } from "../../ui/Buttons/Button";
+import { useState } from "react";
+import { PaymentModule } from "../../modules/PaymentModule/PaymentModule";
 
 export const CartModule = () => {
     const { cart, removeFromCart, updateQuantity } = useCart();
+    const [isPaymentOpen, setIsPaymentOpen] = useState(false);
 
     const subtotal = cart.reduce(
         (acc, item) => acc + item.price * item.quantity,
@@ -15,6 +17,23 @@ export const CartModule = () => {
     );
     const deliveryFee = subtotal > 5000 ? 0 : 200;
     const total = subtotal + deliveryFee;
+
+    if (cart.length === 0) {
+        return (
+            <div className={styles.emptyCart}>
+                <Typography variant="h1">Себетиңиз бош</Typography>
+                <button
+                    className={styles.checkoutBtn}
+                    onClick={() => (window.location.href = "/")}
+                >
+                    Шопингди баштоо
+                </button>
+            </div>
+        );
+    }
+    const handlePayment = () => {
+        setIsPaymentOpen(true);
+    };
 
     if (cart.length === 0) {
         return (
@@ -114,20 +133,24 @@ export const CartModule = () => {
                         <span>Жалпы сумма</span>
                         <span>{total} сом</span>
                     </div>
-                    <Button variant="blackButton" text="Төлөмгө өтүү" />
+                    <Button
+                        variant="blackButton"
+                        text="Төлөмгө өтүү"
+                        onClick={handlePayment}
+                    />
                     <div className={styles.paymentIcons}>
                         <img src={visa} alt="Visa" />
-                        <img
-                            src={mbank}
-                            alt="MBANK"
-                            style={{ filter: "none", opacity: 1 }}
-                        />
                     </div>
                     <Typography variant="psmall">
                         Баалар жана жеткирүү акысы төлөмдү ырастоо учурунда
                         такталат.
                     </Typography>
                 </div>
+                <PaymentModule
+                    isOpen={isPaymentOpen}
+                    onClose={() => setIsPaymentOpen(false)}
+                    total={total}
+                />
             </div>
         </div>
     );

@@ -6,16 +6,13 @@ class Command(BaseCommand):
     help = 'Imports products from products.csv'
 
     def handle(self, *args, **options):
-        # 1. Clear existing data
         self.stdout.write("Clearing existing products...")
         Product.objects.all().delete()
 
-        # 2. Import new data
         with open('products.csv', mode='r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             count = 0
             for row in reader:
-                # Use your logic for year and price
                 raw_year = row.get('year', '')
                 year_val = int(float(raw_year)) if raw_year and raw_year.strip() else 0
                 

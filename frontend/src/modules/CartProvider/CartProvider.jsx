@@ -82,9 +82,33 @@ export const CartProvider = ({ children }) => {
         }
     };
 
+    const clearCart = async () => {
+        const ids = cart.map((item) => item.product_id);
+        try {
+            await Promise.all(
+                ids.map((id) =>
+                    fetch(`http://127.0.0.1:8000/api/cart/${id}/`, {
+                        method: "DELETE",
+                        headers: { "Content-Type": "application/json" },
+                    })
+                )
+            );
+        } catch (err) {
+            console.error("Failed to clear cart items:", err);
+        } finally {
+            setCart([]);
+        }
+    };
+
     return (
         <CartContext.Provider
-            value={{ cart, addToCart, removeFromCart, updateQuantity }}
+            value={{
+                cart,
+                addToCart,
+                removeFromCart,
+                updateQuantity,
+                clearCart,
+            }}
         >
             {children}
         </CartContext.Provider>

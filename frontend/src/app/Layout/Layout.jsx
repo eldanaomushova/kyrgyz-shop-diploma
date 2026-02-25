@@ -1,6 +1,5 @@
 import { Outlet, useLocation } from "react-router-dom";
 import { Header } from "../../modules/Header/components/Header";
-import { Footer } from "../../modules/Footer/components/Footer";
 import { useEffect } from "react";
 import { CartProvider } from "../../modules/CartProvider/CartProvider";
 
@@ -17,7 +16,6 @@ export const Layout = () => {
                 <main>
                     <Outlet />
                 </main>
-                <Footer />
             </CartProvider>
         </div>
     );

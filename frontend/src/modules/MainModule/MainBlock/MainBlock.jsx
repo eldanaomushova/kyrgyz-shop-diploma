@@ -3,6 +3,8 @@ import { Typography } from "../../../ui/Typography/Typography";
 import { Button } from "../../../ui/Buttons/Button";
 import { useNavigate } from "react-router-dom";
 import { PATH } from "../../../utils/Constants/Constants";
+import { Footer } from "modules/Footer/components/Footer";
+import heroVideo from "../../../assets/Videos/video.mp4";
 
 export const MainBlock = () => {
     const navigate = useNavigate();
@@ -31,6 +33,15 @@ export const MainBlock = () => {
     return (
         <div className={styles.main}>
             <section className={styles.hero}>
+                <video
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    className={styles.videoBg}
+                >
+                    <source src={heroVideo} type="video/mp4" />
+                </video>
                 <div className={styles.heroOverlay}>
                     <div className={styles.heroContent}>
                         <Typography
@@ -89,6 +100,7 @@ export const MainBlock = () => {
                     </div>
                 </div>
             </section>
+            <Footer />
         </div>
     );
 };

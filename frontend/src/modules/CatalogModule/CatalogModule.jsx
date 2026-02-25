@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import styles from "./CatalogModule.module.scss";
 import { Pagination } from "../../ui/Pagination/Pagination";
+import { Footer } from "modules/Footer/components/Footer";
 
 export const CatalogModule = () => {
     const [products, setProducts] = useState([]);
@@ -128,6 +129,7 @@ export const CatalogModule = () => {
                     />
                 </>
             )}
+            <Footer />
         </main>
     );
 };

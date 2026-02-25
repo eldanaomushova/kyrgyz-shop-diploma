@@ -1,0 +1,293 @@
+.main {
+    width: 100%;
+}
+
+.hero {
+    position: relative;
+    height: 90vh;
+    width: 100%;
+    background-image: url("https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1920&q=80");
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .heroOverlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .heroContent {
+        text-align: center;
+        color: #ffffff;
+        max-width: 800px;
+        padding: 0 20px;
+
+        .heroTitle {
+            font-size: 4rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        }
+
+        .heroSubtitle {
+            font-size: 1.25rem;
+            margin-bottom: 2rem;
+            letter-spacing: 1px;
+        }
+
+        .heroButton {
+            background-color: #ffffff;
+            color: #000000;
+            padding: 12px 40px;
+            border: none;
+            font-weight: bold;
+            text-transform: uppercase;
+            transition: background 0.3s ease;
+
+            &:hover {
+                background-color: #f1f1f1;
+            }
+        }
+    }
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+.categories {
+    padding: 80px 0;
+    background-color: #ffffff;
+
+    .sectionTitle {
+        text-align: center;
+        font-size: 2rem;
+        letter-spacing: 0.1em;
+        margin-bottom: 50px;
+        font-family: "Helvetica Neue", Arial, sans-serif;
+        font-weight: 700;
+    }
+
+    .categoryGrid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0 20px;
+
+        @media (max-width: 1024px) {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    .categoryCard {
+        cursor: pointer;
+        transition: opacity 0.3s ease;
+
+        &:hover {
+            .imageWrapper img {
+                transform: scale(1.02);
+            }
+            .shopLink {
+                text-decoration: underline;
+            }
+        }
+
+        .imageWrapper {
+            aspect-ratio: 2 / 3;
+            overflow: hidden;
+            background-color: #f5f5f5;
+            margin-bottom: 15px;
+
+            img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            }
+        }
+
+        .categoryInfo {
+            text-align: left;
+
+            .categoryName {
+                font-size: 0.9rem;
+                font-weight: 600;
+                letter-spacing: 0.05em;
+                margin-bottom: 4px;
+            }
+
+            .shopLink {
+                font-size: 0.8rem;
+                color: #767676;
+                text-transform: capitalize;
+            }
+        }
+    }
+}
+.featured {
+    padding: 5rem 0;
+    background: white;
+
+    .sectionTitle {
+        text-align: center;
+        margin-bottom: 3rem;
+        font-size: 2.5rem;
+    }
+
+    .productGrid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+        align-items: stretch;
+    }
+
+    .productCard {
+        display: flex;
+        flex-direction: column;
+        background: #fff;
+        padding: 10px;
+        border: 1px solid #eee;
+        height: 100%;
+
+        .imageWrapper {
+            aspect-ratio: 3 / 4;
+            overflow: hidden;
+            margin-bottom: 15px;
+
+            img {
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+                background-color: #f9f9f9;
+            }
+        }
+
+        .productDetails {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+        .textContent {
+            margin-bottom: 20px;
+            flex-grow: 1;
+
+            .productName {
+                font-size: 0.9rem;
+                line-height: 1.2;
+                height: 2.4em;
+                overflow: hidden;
+                margin-bottom: 8px;
+                font-weight: 500;
+            }
+
+            .productPrice {
+                font-weight: bold;
+                font-size: 1rem;
+            }
+        }
+
+        .addToCartButton {
+            width: 100%;
+            margin-top: auto;
+            border-radius: 0;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+    }
+}
+
+.newsletter {
+    padding: 5rem 0;
+    background: #343a40;
+    color: white;
+    text-align: center;
+
+    .newsletterTitle {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .newsletterText {
+        font-size: 1.2rem;
+        margin-bottom: 2rem;
+        opacity: 0.9;
+    }
+
+    .newsletterForm {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
+        max-width: 500px;
+        margin: 0 auto;
+
+        .emailInput {
+            flex: 1;
+            padding: 1rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+    }
+}
+
+@media (max-width: 768px) {
+    .hero {
+        flex-direction: column;
+        text-align: center;
+        padding: 2rem 0;
+
+        .heroContent {
+            padding: 0 2rem;
+
+            .heroTitle {
+                font-size: 2.5rem;
+            }
+
+            .heroSubtitle {
+                font-size: 1.2rem;
+            }
+        }
+
+        .heroImage {
+            height: 50vh;
+        }
+    }
+
+    .categories,
+    .featured,
+    .newsletter {
+        padding: 3rem 0;
+    }
+
+    .sectionTitle,
+    .newsletterTitle {
+        font-size: 2rem;
+    }
+
+    .categoryGrid,
+    .productGrid {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+
+    .newsletterForm {
+        flex-direction: column;
+
+        .emailInput {
+            width: 100%;
+        }
+    }
+}

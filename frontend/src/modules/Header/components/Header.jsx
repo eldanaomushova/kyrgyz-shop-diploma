@@ -25,16 +25,13 @@ export const Header = () => {
     const isAuthenticated = !!localStorage.getItem("token");
 
     const handleLogout = () => {
-        // 1. Удаляем данные из хранилища
         localStorage.removeItem("token");
         localStorage.removeItem("user");
 
-        // 2. Если в useAuth есть экшен для логаута, вызываем его
         if (actions.logout) {
             actions.logout();
         }
 
-        // 3. Уходим на страницу входа
         navigate(PATH.signin || "/signin");
     };
 
@@ -105,24 +102,30 @@ export const Header = () => {
                                 />
                             )}
 
+                            {/* Search Button */}
                             <Button
                                 variant="icon"
-                                icon={<Search size={18} />}
                                 onClick={() => setIsSearchOpen(true)}
-                            />
+                                className={styles.iconBtn} // Changed from cartIconWrapper to iconBtn
+                            >
+                                <Search size={18} />
+                            </Button>
 
+                            {/* User Button */}
                             <Button
                                 variant="icon"
                                 icon={<User size={18} />}
                                 onClick={() => navigate(PATH.signin)}
                                 className={styles.iconBtn}
                             />
+
+                            {/* Cart Button */}
                             <Button
                                 variant="icon"
-                                icon={<ShoppingBag size={16} />}
                                 onClick={() => navigate(PATH.cart)}
                                 className={styles.cartIconWrapper}
                             >
+                                <ShoppingBag size={18} />
                                 {cartCount > 0 && (
                                     <span className={styles.badge}>
                                         {cartCount}

@@ -20,10 +20,8 @@ export const SigninModule = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Пытаемся выполнить вход
-        const result = await actions.login(form);
+        await actions.login(form);
 
-        // 1. Проверяем, успешен ли вход (наличие токена)
         if (localStorage.getItem("token")) {
             Swal.fire({
                 title: "Ийгиликтүү!",

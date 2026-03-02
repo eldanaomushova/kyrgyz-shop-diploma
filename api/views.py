@@ -9,11 +9,17 @@ from rest_framework.decorators import api_view, permission_classes
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers, status
 from django.contrib.auth import authenticate
-import json
-import uuid
 from django.conf import settings
 import traceback
 import time
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import google.genai as genai
+import os
+from .models import Product
+from dotenv import load_dotenv 
+load_dotenv()
+
 
 
 class RegisterSerializer(serializers.Serializer):
@@ -503,3 +509,4 @@ def payment_status(request, payment_id):
             {'error': 'Payment not found'},
             status=status.HTTP_404_NOT_FOUND
         )
+        

@@ -1,7 +1,10 @@
-from django.http import JsonResponse
+from django.http import HttpResponseRedirect, JsonResponse
 from .services import get_shopping_response
 import json
 from django.views.decorators.csrf import csrf_exempt
+from django.shortcuts import redirect, get_object_or_404
+from api.models import Product, CartItem
+
 
 @csrf_exempt
 def chat_endpoint(request):  
@@ -9,8 +12,23 @@ def chat_endpoint(request):
         try:
             data = json.loads(request.body)
             user_message = data.get("message", "")
-            bot_response = get_shopping_response(user_message)
-            return JsonResponse({"response": bot_response})
+            
+            # Get the HTML string from your logic
+            bot_html_output = get_shopping_response(user_message)
+            
+            # CRITICAL: Return as JSON object
+            return JsonResponse({"response": bot_html_output})
+            
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=400)
-    return JsonResponse({"error": "Only POST requests allowed"}, status=405)
+            return JsonResponse({"response": "Error processing request"}, status=500)
+    return JsonResponse({"error": "Invalid method"}, status=405)
+
+@csrf_exempt
+def add_to_cart(request, product_id):
+    product = get_object_or_404(Product, product_id=product_id)
+    cart_item, created = CartItem.objects.get_or_create(product=product)
+    if not created:
+        cart_item.quantity += 1
+        cart_item.save()
+    return redirect('/cart/')
+

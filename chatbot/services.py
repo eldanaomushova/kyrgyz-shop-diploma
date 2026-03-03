@@ -1,89 +1,110 @@
 import os
-import time
+import re
+import pandas as pd
+import markdown
 from django.conf import settings
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
-from langchain_community.document_loaders import CSVLoader
-from langchain_community.vectorstores import Chroma
-from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_classic.chains import create_retrieval_chain
-from langchain_classic.chains.combine_documents import create_stuff_documents_chain
-from langchain_classic.chains.combine_documents import create_stuff_documents_chain
-from langchain_classic.chains import create_retrieval_chain
+# from langchain_community.document_loaders import CSVLoader
+# from langchain_community.vectorstores import Chroma
+from langchain_classic.agents import create_tool_calling_agent
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_classic.tools import Tool
+from langchain_classic.agents import AgentExecutor, create_openai_functions_agent
+from langchain_core.prompts import MessagesPlaceholder
 
 load_dotenv()
 
-def get_chatbot_chain():
-    current_file_dir = os.path.dirname(os.path.abspath(__file__))
-    
-    # 2. Go up one level to the project root (Diploma-Project/)
-    project_root = os.path.dirname(current_file_dir)
-    # Use BASE_DIR to ensure it works inside the Django environment
-    csv_path = os.path.join(settings.BASE_DIR, 'DIPLOMA-PROJECT/data', 'products.csv')
+llm = ChatGroq(
+    temperature=0,
+    groq_api_key=os.getenv("GROQ_API_KEY"),
+    model_name="llama-3.3-70b-versatile"
+)
+
+def search_csv_directly(query):
+    csv_path = os.path.join(settings.BASE_DIR, 'DIPLOMA-PROJECT', 'data', 'products.csv')
     
     if not os.path.exists(csv_path):
-        raise FileNotFoundError(f"Could not find products.csv at: {csv_path}")
+        return f"Ката: Файл табылган жок."
 
-    loader = CSVLoader(file_path=csv_path, encoding='utf-8')
-    documents = loader.load()
-
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=600, chunk_overlap=50)
-    texts = text_splitter.split_documents(documents)
-
-    embeddings = HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2')
-    
-    # Path for vector database
-    persist_dir = os.path.join(settings.BASE_DIR, "vector_db")
-    
-    vector_db = Chroma.from_documents(
-        documents=texts, 
-        embedding=embeddings, 
-        persist_directory=persist_dir
-    )
-
-    llm = ChatGroq(
-        temperature=0.2, 
-        groq_api_key=os.getenv("GROQ_API_KEY"), 
-        model_name="llama-3.3-70b-versatile"
-    )
-
-    system_prompt = (
-        "Сиз Кыргызстандагы интернет-дүкөндүн сылык соода ассистентисиз. "
-        "Контекстти колдонуп, кардардын суроосуна КЫСКА жана ТАК жооп бериңиз. "
+    try:
+        df = pd.read_csv(csv_path)
+        query = str(query).lower()
         
-        "Эрежелер: "
-        "1. Жоопту колдонуучунун тилинде бериңиз. "
-        "2. Эгерде товар табылса, ТӨМӨНКҮ форматта гана жооп бериңиз:\n"
-        "   * **Аты:** [Продукттун аты]\n"
-        "   * **Бренди:** [Бренд]\n"
-        "   * **Баасы:** [Баасы] сом\n"
-        "3. Ар бир товарды өзүнчө блок кылып бөлүп көрсөтүңүз. "
-        "4. Эгерде продукт жок болсо, кыскача: 'Тилекке каршы, бул товар учурда жок. Бирок бизде башка варианттар бар:' деп башка товарларды сунуштаңыз. "
-        "5. Ашыкча сөздөрдү (мисалы: 'Мен сизге жардам бере алам', 'Бул жерде маалымат') кошпоңуз. "
-        "\n\n"
-        "Контекст: {context}"
-    )
+        search_columns = ['productDisplayName', 'name', 'title', 'description']
+        available_cols = [c for c in search_columns if c in df.columns]
+        
+        if not available_cols:
+            return "Ката: CSV файлында издөө үчүн тиешелүү колонкалар жок."
 
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            ("system", system_prompt),
-            ("human", "{input}"), 
-        ]
-    )
-    question_answer_chain = create_stuff_documents_chain(llm, prompt)
+        mask = df[available_cols].apply(
+            lambda row: row.astype(str).str.lower().str.contains(query).any(), axis=1
+        )
+        
+        results = df[mask]
+        
+        if results.empty:
+            return "Кечириңиз, базада мындай товар табылган жок."
+        
+        context = ""
+        for _, row in results.head(1).iterrows():
+            p_id = row.get('id') or row.get('product_id') or "N/A"
+            p_name = row.get('productDisplayName') or row.get('name') or "Товар"
+            p_price = row.get('price') or "Келишимдүү"
+            context += f"ID: {p_id} | Аты: {p_name} | Баасы: {p_price} сом\n"
+        
+        return context
+    except Exception as e:
+        print(f"--- DEBUG ERROR: {e} ---") 
+        return f"CSV окууда ката: {e}"
 
-    return create_retrieval_chain(
-        vector_db.as_retriever(search_kwargs={"k": 1}), 
-        question_answer_chain
+tools = [
+    Tool(
+        name="product_search",
+        func=search_csv_directly,
+        description="Дүкөндөн товарларды издөө үчүн. Параметр: товардын аты."
     )
+]
 
-qa_chain = get_chatbot_chain()
+agent_prompt = ChatPromptTemplate.from_messages([
+    ("system",
+    "Сиз Кыргызстандагы интернет-дүкөндүн соода ассистентисиз. "
+    "Жоопту дайыма КЫРГЫЗ тилинде бериңиз. "
+    "Товарларды издөө үчүн 'product_search' куралын колдонуңуз."),
+    MessagesPlaceholder(variable_name="chat_history", optional=True),
+    ("human", "{input}"),
+    MessagesPlaceholder(variable_name="agent_scratchpad"),
+])
+
+agent = create_tool_calling_agent(llm, tools, agent_prompt)
+agent_executor = AgentExecutor(
+    agent=agent, 
+    tools=tools, 
+    verbose=True, 
+    handle_parsing_errors=True
+)
+def format_with_buttons(text):
+    match = re.search(r"ID:\s*(\d+)", text)
+    product_id = match.group(1) if match else None
+
+    html_content = markdown.markdown(text)
+
+    if product_id:
+        button_html = f"""
+        <div style="margin-top: 10px;">
+            <button 
+                onclick="window.dispatchEvent(new CustomEvent('addToCartFromChat', {{ detail: {{ productId: '{product_id}' }} }}))"
+                style="background-color:#28a745;color:white;padding:10px 20px;border:none;border-radius:5px;cursor:pointer;font-weight:bold;">
+                🛒 Себетке кошуу
+            </button>
+        </div>
+        """
+        return f"{html_content}{button_html}"
+    return html_content
 
 def get_shopping_response(message):
     try:
-        response = qa_chain.invoke({"input": message})
-        return response["answer"]
+        result = agent_executor.invoke({"input": message})
+        return format_with_buttons(result.get("output", ""))
     except Exception as e:
-        return f"System Error: {str(e)}"
+        return f"❌ Ката: {str(e)}"

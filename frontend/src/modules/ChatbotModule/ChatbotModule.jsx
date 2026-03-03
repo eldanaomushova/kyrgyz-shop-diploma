@@ -1,3 +1,5 @@
+import Swal from "sweetalert2";
+import { useCart } from "../../modules/CartProvider/CartProvider";
 import { useState, useEffect, useRef } from "react";
 
 export const ChatbotModule = () => {
@@ -6,11 +8,46 @@ export const ChatbotModule = () => {
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const chatEndRef = useRef(null);
+    const { addToCart } = useCart();
 
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
+    useEffect(() => {
+        const handleChatAdd = async (event) => {
+            const productId = event.detail.productId;
+
+            try {
+                const response = await fetch(
+                    `http://127.0.0.1:8000/api/products/detail/${productId}/`
+                );
+                if (!response.ok) throw new Error("Product not found");
+
+                const productData = await response.json();
+
+                addToCart(productData);
+
+                Swal.fire({
+                    title: "Кошулду!",
+                    text: `${productData.productDisplayName} себетке кошулду.`,
+                    icon: "success",
+                    toast: true,
+                    position: "top-end",
+                    showConfirmButton: false,
+                    timer: 2000,
+                });
+            } catch (error) {
+                console.error("Error adding from chat:", error);
+            }
+        };
+
+        window.addEventListener("addToCartFromChat", handleChatAdd);
+
+        return () => {
+            window.removeEventListener("addToCartFromChat", handleChatAdd);
+        };
+    }, [addToCart]);
     const sendMessage = async () => {
         if (!input.trim()) return;
 
@@ -29,6 +66,7 @@ export const ChatbotModule = () => {
             });
 
             const data = await res.json();
+            console.log("Chatbot Response:", data);
 
             setMessages((prev) => [
                 ...prev,
@@ -145,27 +183,39 @@ export const ChatbotModule = () => {
                                     margin: "10px 0",
                                 }}
                             >
-                                <span
-                                    style={{
-                                        display: "inline-block",
-                                        padding: "8px 12px",
-                                        borderRadius: "12px",
-                                        backgroundColor:
-                                            m.role === "user"
-                                                ? "#007bff"
-                                                : "#f1f0f0",
-                                        color:
-                                            m.role === "user"
-                                                ? "white"
-                                                : "#333",
-                                        fontSize: "0.95em",
-                                        maxWidth: "80%",
-                                    }}
-                                >
-                                    {m.text}
-                                </span>
+                                {m.role === "bot" ? (
+                                    <span
+                                        style={{
+                                            display: "inline-block",
+                                            padding: "8px 12px",
+                                            borderRadius: "12px",
+                                            backgroundColor: "#f1f0f0",
+                                            color: "#333",
+                                            fontSize: "0.95em",
+                                            maxWidth: "80%",
+                                        }}
+                                        dangerouslySetInnerHTML={{
+                                            __html: m.text,
+                                        }}
+                                    />
+                                ) : (
+                                    <span
+                                        style={{
+                                            display: "inline-block",
+                                            padding: "8px 12px",
+                                            borderRadius: "12px",
+                                            backgroundColor: "#007bff",
+                                            color: "white",
+                                            fontSize: "0.95em",
+                                            maxWidth: "80%",
+                                        }}
+                                    >
+                                        {m.text}
+                                    </span>
+                                )}
                             </div>
                         ))}
+
                         {isLoading && (
                             <p style={{ fontSize: "0.8em", color: "#888" }}>
                                 Typing...

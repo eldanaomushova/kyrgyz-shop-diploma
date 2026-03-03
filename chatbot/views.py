@@ -12,11 +12,7 @@ def chat_endpoint(request):
         try:
             data = json.loads(request.body)
             user_message = data.get("message", "")
-            
-            # Get the HTML string from your logic
             bot_html_output = get_shopping_response(user_message)
-            
-            # CRITICAL: Return as JSON object
             return JsonResponse({"response": bot_html_output})
             
         except Exception as e:

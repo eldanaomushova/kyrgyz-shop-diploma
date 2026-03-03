@@ -5,8 +5,6 @@ import markdown
 from django.conf import settings
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
-# from langchain_community.document_loaders import CSVLoader
-# from langchain_community.vectorstores import Chroma
 from langchain_classic.agents import create_tool_calling_agent
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_classic.tools import Tool
@@ -29,17 +27,22 @@ def search_csv_directly(query):
 
     try:
         df = pd.read_csv(csv_path)
-        query = str(query).lower()
+        search_terms = str(query).lower().split()
         
-        search_columns = ['productDisplayName', 'name', 'title', 'description']
+        search_columns = [
+            'productDisplayName', 'brand', 'articleType', 
+            'subCategory', 'masterCategory', 'color'
+        ]
         available_cols = [c for c in search_columns if c in df.columns]
-        
-        if not available_cols:
-            return "Ката: CSV файлында издөө үчүн тиешелүү колонкалар жок."
 
-        mask = df[available_cols].apply(
-            lambda row: row.astype(str).str.lower().str.contains(query).any(), axis=1
-        )
+        if not available_cols:
+            return "Ката: CSV файлында тиешелүү колонкалар табылган жок."
+
+        combined_text = df[available_cols].fillna('').astype(str).agg(' '.join, axis=1).str.lower()
+
+        mask = pd.Series([True] * len(df))
+        for term in search_terms:
+            mask &= combined_text.str.contains(term, na=False)
         
         results = df[mask]
         
@@ -48,8 +51,8 @@ def search_csv_directly(query):
         
         context = ""
         for _, row in results.head(1).iterrows():
-            p_id = row.get('id') or row.get('product_id') or "N/A"
-            p_name = row.get('productDisplayName') or row.get('name') or "Товар"
+            p_id = row.get('id') or "N/A"
+            p_name = row.get('productDisplayName') or "Товар"
             p_price = row.get('price') or "Келишимдүү"
             context += f"ID: {p_id} | Аты: {p_name} | Баасы: {p_price} сом\n"
         
@@ -57,7 +60,6 @@ def search_csv_directly(query):
     except Exception as e:
         print(f"--- DEBUG ERROR: {e} ---") 
         return f"CSV окууда ката: {e}"
-
 tools = [
     Tool(
         name="product_search",
@@ -69,10 +71,14 @@ tools = [
 agent_prompt = ChatPromptTemplate.from_messages([
     ("system", (
         "Сиз Кыргызстандагы интернет-дүкөндүн соода ассистентисиз. "
-        "Жоопту дайыма КЫРГЫЗ тилинде бериңиз. "
-        "Эрежелер:\n"
-        "1. Ашыкча сөздөрдү кошпоңуз (мисалы: 'издеп жатам', 'таптым').\n"
-        "2. Дароо товардын маалыматын төмөнкү форматта бериңиз:\n"
+        "Жоопту дайыма КЫРГЫЗ тилинде бериңиз.\n\n"
+        
+        "ЛОГИКА:\n"
+        "1. Эгер колдонуучу учурашса (мисалы: 'салам', 'кандай') же жалпы суроо берсе, "
+        "аспапты (tool) колдонбостон, дароо кыргызча жылуу жооп бериңиз.\n"
+        "2. Эгер колдонуучу конкреттүү товарды сураса гана 'product_search' аспабын колдонуңуз.\n\n"
+        
+        "ТОВАР ТАБЫЛГАНДАГЫ ФОРМАТ:\n"
         "📦 **[Аты]**\n"
         "💰 Баасы: [Баасы] сом\n"
         "🆔 ID: [ID]\n"
@@ -92,7 +98,7 @@ agent_executor = AgentExecutor(
 )
 
 def format_with_buttons(text):
-    match = re.search(r"ID:\s*(\d+)", text)
+    match = re.search(r"ID[:\s]*(\d+)", text, re.IGNORECASE)
     product_id = match.group(1) if match else None
 
     html_content = markdown.markdown(text)

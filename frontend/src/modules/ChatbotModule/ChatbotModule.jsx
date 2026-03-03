@@ -1,6 +1,7 @@
 import Swal from "sweetalert2";
 import { useCart } from "../../modules/CartProvider/CartProvider";
 import { useState, useEffect, useRef } from "react";
+import styles from "./ChabotModule.module.scss";
 
 export const ChatbotModule = () => {
     const [open, setOpen] = useState(false);
@@ -66,7 +67,6 @@ export const ChatbotModule = () => {
             });
 
             const data = await res.json();
-            console.log("Chatbot Response:", data);
 
             setMessages((prev) => [
                 ...prev,
@@ -74,7 +74,7 @@ export const ChatbotModule = () => {
                     role: "bot",
                     text:
                         data.response ||
-                        "I'm having trouble connecting to the store database.",
+                        "Дүкөндүн маалымат базасына туташууда көйгөй жаралууда. Кечириңиз, азыр жооп бере албайм.",
                 },
             ]);
         } catch (error) {
@@ -83,7 +83,7 @@ export const ChatbotModule = () => {
                 ...prev,
                 {
                     role: "bot",
-                    text: "❌ Connection error. Please make sure the server is running.",
+                    text: "❌ Көйгөй: сервер жумушта эмес. Кечириңиз, азыр жооп бере албайм.",
                 },
             ]);
         } finally {
@@ -92,124 +92,49 @@ export const ChatbotModule = () => {
     };
 
     return (
-        <div
-            style={{
-                position: "fixed",
-                bottom: "20px",
-                right: "20px",
-                zIndex: 1000,
-            }}
-        >
+        <div className={styles.chatbotContainer}>
             {!open && (
                 <button
                     onClick={() => setOpen(true)}
-                    style={{
-                        padding: "12px 20px",
-                        borderRadius: "50px",
-                        backgroundColor: "#007bff",
-                        color: "white",
-                        border: "none",
-                        cursor: "pointer",
-                        boxShadow: "0 4px 10px rgba(0,0,0,0.2)",
-                    }}
+                    className={styles.openButton}
                 >
-                    💬 Помощь по покупкам
+                    💬 Соода кылууга жардам
                 </button>
             )}
 
             {open && (
-                <div
-                    style={{
-                        border: "1px solid #ddd",
-                        padding: "15px",
-                        width: "350px",
-                        backgroundColor: "white",
-                        borderRadius: "15px",
-                        boxShadow: "0 10px 25px rgba(0,0,0,0.15)",
-                        display: "flex",
-                        flexDirection: "column",
-                    }}
-                >
-                    <div
-                        style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            marginBottom: "10px",
-                            borderBottom: "1px solid #eee",
-                            paddingBottom: "5px",
-                        }}
-                    >
-                        <strong style={{ color: "#333" }}>
-                            🛍️ Shop Assistant
-                        </strong>
+                <div className={styles.chatWindow}>
+                    <div className={styles.header}>
+                        <strong>🛍️ Дүкөн кызматкери</strong>
                         <button
                             onClick={() => setOpen(false)}
-                            style={{
-                                background: "none",
-                                border: "none",
-                                cursor: "pointer",
-                            }}
+                            className={styles.closeButton}
                         >
                             ✕
                         </button>
                     </div>
 
-                    <div
-                        style={{
-                            height: "300px",
-                            overflowY: "auto",
-                            marginBottom: "10px",
-                            padding: "5px",
-                        }}
-                    >
+                    <div className={styles.messageArea}>
                         {messages.length === 0 && (
-                            <p
-                                style={{
-                                    color: "#888",
-                                    fontSize: "0.9em",
-                                    textAlign: "center",
-                                }}
-                            >
-                                Salam! Ask me about our products in Kyrgyz,
-                                Russian, or English!
+                            <p className={styles.welcomeText}>
+                                Салам! Кыргыз, Орус же Англис тилинде дүкөндөгү
+                                товарлар жөнүндө суроо бериңиз!
                             </p>
                         )}
                         {messages.map((m, i) => (
                             <div
                                 key={i}
-                                style={{
-                                    textAlign:
-                                        m.role === "user" ? "right" : "left",
-                                    margin: "10px 0",
-                                }}
+                                className={`${styles.messageRow} ${m.role === "user" ? styles.user : styles.bot}`}
                             >
                                 {m.role === "bot" ? (
                                     <span
-                                        style={{
-                                            display: "inline-block",
-                                            padding: "8px 12px",
-                                            borderRadius: "12px",
-                                            backgroundColor: "#f1f0f0",
-                                            color: "#333",
-                                            fontSize: "0.95em",
-                                            maxWidth: "80%",
-                                        }}
+                                        className={styles.botBubble}
                                         dangerouslySetInnerHTML={{
                                             __html: m.text,
                                         }}
                                     />
                                 ) : (
-                                    <span
-                                        style={{
-                                            display: "inline-block",
-                                            padding: "8px 12px",
-                                            borderRadius: "12px",
-                                            backgroundColor: "#007bff",
-                                            color: "white",
-                                            fontSize: "0.95em",
-                                            maxWidth: "80%",
-                                        }}
-                                    >
+                                    <span className={styles.userBubble}>
                                         {m.text}
                                     </span>
                                 )}
@@ -217,40 +142,25 @@ export const ChatbotModule = () => {
                         ))}
 
                         {isLoading && (
-                            <p style={{ fontSize: "0.8em", color: "#888" }}>
-                                Typing...
-                            </p>
+                            <p className={styles.loadingText}>Typing...</p>
                         )}
                         <div ref={chatEndRef} />
                     </div>
 
-                    <div style={{ display: "flex", gap: "5px" }}>
+                    <div className={styles.inputArea}>
                         <input
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyPress={(e) =>
                                 e.key === "Enter" && sendMessage()
                             }
-                            placeholder="Write a message..."
-                            style={{
-                                flex: 1,
-                                padding: "8px",
-                                borderRadius: "5px",
-                                border: "1px solid #ccc",
-                            }}
+                            placeholder="Билдирүү жазыңыз..."
                         />
                         <button
                             onClick={sendMessage}
-                            style={{
-                                padding: "8px 15px",
-                                backgroundColor: "#28a745",
-                                color: "white",
-                                border: "none",
-                                borderRadius: "5px",
-                                cursor: "pointer",
-                            }}
+                            className={styles.sendButton}
                         >
-                            Send
+                            Жөнөтүү
                         </button>
                     </div>
                 </div>

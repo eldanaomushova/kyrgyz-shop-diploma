@@ -67,10 +67,17 @@ tools = [
 ]
 
 agent_prompt = ChatPromptTemplate.from_messages([
-    ("system",
-    "Сиз Кыргызстандагы интернет-дүкөндүн соода ассистентисиз. "
-    "Жоопту дайыма КЫРГЫЗ тилинде бериңиз. "
-    "Товарларды издөө үчүн 'product_search' куралын колдонуңуз."),
+    ("system", (
+        "Сиз Кыргызстандагы интернет-дүкөндүн соода ассистентисиз. "
+        "Жоопту дайыма КЫРГЫЗ тилинде бериңиз. "
+        "Эрежелер:\n"
+        "1. Ашыкча сөздөрдү кошпоңуз (мисалы: 'издеп жатам', 'таптым').\n"
+        "2. Дароо товардын маалыматын төмөнкү форматта бериңиз:\n"
+        "📦 **[Аты]**\n"
+        "💰 Баасы: [Баасы] сом\n"
+        "🆔 ID: [ID]\n"
+        "3. Эгер товар табылбаса, кыскача 'Кечириңиз, табылган жок' деп айтыңыз."
+    )),
     MessagesPlaceholder(variable_name="chat_history", optional=True),
     ("human", "{input}"),
     MessagesPlaceholder(variable_name="agent_scratchpad"),
@@ -83,6 +90,7 @@ agent_executor = AgentExecutor(
     verbose=True, 
     handle_parsing_errors=True
 )
+
 def format_with_buttons(text):
     match = re.search(r"ID:\s*(\d+)", text)
     product_id = match.group(1) if match else None
@@ -91,15 +99,16 @@ def format_with_buttons(text):
 
     if product_id:
         button_html = f"""
-        <div style="margin-top: 10px;">
-            <button 
-                onclick="window.dispatchEvent(new CustomEvent('addToCartFromChat', {{ detail: {{ productId: '{product_id}' }} }}))"
-                style="background-color:#28a745;color:white;padding:10px 20px;border:none;border-radius:5px;cursor:pointer;font-weight:bold;">
-                🛒 Себетке кошуу
-            </button>
+        <div style="margin-top: 10px; display: flex; gap: 8px;">
+            <a href="http://localhost:3000/product/{product_id}" 
+               target="_blank"
+               style="text-decoration:none; background-color:#007bff; color:white; padding:8px 16px; border-radius:5px; font-weight:bold; font-size:13px;">
+               👁 Көрүү
+            </a>
         </div>
         """
         return f"{html_content}{button_html}"
+    
     return html_content
 
 def get_shopping_response(message):

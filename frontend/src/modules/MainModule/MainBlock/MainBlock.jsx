@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 import { PATH } from "../../../utils/Constants/Constants";
 import { Footer } from "modules/Footer/components/Footer";
 import heroVideo from "../../../assets/Videos/video.mp4";
-import { ChatbotModule } from "../../../modules/ChatbotModule/ChatbotModule";
 
 export const MainBlock = () => {
     const navigate = useNavigate();
@@ -70,7 +69,6 @@ export const MainBlock = () => {
                     </div>
                 </div>
             </section>
-            <ChatbotModule />
             <section className={styles.categories}>
                 <div className={styles.container}>
                     <Typography variant="h2" className={styles.sectionTitle}>

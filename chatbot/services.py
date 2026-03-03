@@ -8,7 +8,7 @@ from langchain_groq import ChatGroq
 from langchain_classic.agents import create_tool_calling_agent
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_classic.tools import Tool
-from langchain_classic.agents import AgentExecutor, create_openai_functions_agent
+from langchain_classic.agents import AgentExecutor
 from langchain_core.prompts import MessagesPlaceholder
 
 load_dotenv()
@@ -18,7 +18,7 @@ llm = ChatGroq(
     groq_api_key=os.getenv("GROQ_API_KEY"),
     model_name="llama-3.3-70b-versatile"
 )
-
+session_history = []
 def search_csv_directly(query):
     csv_path = os.path.join(settings.BASE_DIR, 'DIPLOMA-PROJECT', 'data', 'products.csv')
     
@@ -80,8 +80,8 @@ agent_prompt = ChatPromptTemplate.from_messages([
         
         "ТОВАР ТАБЫЛГАНДАГЫ ФОРМАТ:\n"
         "📦 **[Аты]**\n"
-        "💰 Баасы: [Баасы] сом\n"
-        "🆔 ID: [ID]\n"
+        "Баасы: [Баасы] сом\n"
+        "ID: [ID]\n"
         "3. Эгер товар табылбаса, кыскача 'Кечириңиз, табылган жок' деп айтыңыз."
     )),
     MessagesPlaceholder(variable_name="chat_history", optional=True),
@@ -109,7 +109,7 @@ def format_with_buttons(text):
             <a href="http://localhost:3000/product/{product_id}" 
                target="_blank"
                style="text-decoration:none; background-color:#007bff; color:white; padding:8px 16px; border-radius:5px; font-weight:bold; font-size:13px;">
-               👁 Көрүү
+               Көрүү
             </a>
         </div>
         """
@@ -118,8 +118,20 @@ def format_with_buttons(text):
     return html_content
 
 def get_shopping_response(message):
+    global session_history
     try:
-        result = agent_executor.invoke({"input": message})
-        return format_with_buttons(result.get("output", ""))
+        result = agent_executor.invoke({
+            "input": message,
+            "chat_history": session_history 
+        })
+        output_text = result.get("output", "")
+
+        session_history.append({"role": "user", "content": message})
+        session_history.append({"role": "assistant", "content": output_text})
+
+        if len(session_history) > 10:
+            session_history = session_history[-10:]
+
+        return format_with_buttons(output_text)
     except Exception as e:
         return f"❌ Ката: {str(e)}"

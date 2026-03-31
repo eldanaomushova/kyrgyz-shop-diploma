@@ -7,6 +7,7 @@ import { ProductDetailPage } from "../../pages/ProductDetailPage/ProductDetailPa
 import { CartPage } from "../../pages/CartPage/CartPage";
 import { SigninPage } from "../../pages/AuthPage/SigninPage";
 import { SignupPage } from "../../pages/AuthPage/SignupPage";
+import VirtualTryOnPage from "../../pages/VirtualTryOnPage/VirtualTryOnPage";
 
 export const AppRouter = createBrowserRouter([
     {
@@ -36,6 +37,10 @@ export const AppRouter = createBrowserRouter([
             {
                 path: "/signup",
                 element: <SignupPage />,
+            },
+            {
+                path: PATH.virtualTryOn,
+                element: <VirtualTryOnPage />,
             },
         ],
     },

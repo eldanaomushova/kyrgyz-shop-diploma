@@ -87,6 +87,14 @@ export const Header = () => {
                                             Балдар
                                         </button>
                                     </li>
+                                    <li>
+                                        <button
+                                            onClick={() => navigate(PATH.virtualTryOn)}
+                                            className={styles.navBtn}
+                                        >
+                                            Virtual Try-On
+                                        </button>
+                                    </li>
                                 </ul>
                             </nav>
                         </div>

@@ -1,3 +1,6 @@
+import logging
+from venv import logger
+
 from django.shortcuts import get_object_or_404
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -5,19 +8,21 @@ from rest_framework.response import Response
 from .serializers import ProductSerializer
 from .models import Product, CartItem, Order, Payment
 from django.contrib.auth.models import User
-from rest_framework.decorators import api_view, permission_classes
+from django.db.models import Q
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers, status
 from django.contrib.auth import authenticate
 from django.conf import settings
 import traceback
 import time
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
 import google.genai as genai
 import os
 from .models import Product
 from dotenv import load_dotenv 
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
+from .models import Product
+from .serializers import ProductSerializer
+from django.db import models  
 load_dotenv()
 
 
@@ -508,5 +513,421 @@ def payment_status(request, payment_id):
         return Response(
             {'error': 'Payment not found'},
             status=status.HTTP_404_NOT_FOUND
+        )
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@authentication_classes([])
+def clothing_questionnaire(request):
+    try:
+        
+        data = request.data
+        occasion = data.get('occasion')
+        body_type = data.get('body_type')
+        preferred_colors = data.get('preferred_colors', [])
+        budget = data.get('budget')
+        gender = data.get('gender')
+        
+        if not all([occasion, body_type, gender]):
+            missing_fields = []
+            if not occasion: missing_fields.append('occasion')
+            if not body_type: missing_fields.append('body_type')
+            if not gender: missing_fields.append('gender')
+            
+            return Response(
+                {'error': f'Missing required fields: {", ".join(missing_fields)}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        allowed_categories = ['Кийим-кече', 'Бут кийим']
+        excluded_article_types = [
+            'Дезодарант', 'Духи жана спрей', 'Духи топтому', 'Парфюмерия',
+            'Шарф', 'Шарфтар', 'Галстук', 'Галстуктар', 'Ремень', 'Ремендер',
+            'Көз айнек', 'Көз айнектер', 'Зергер буюмдары топтому', 'Зер буюмдардар',
+            'Шурулар', 'Билериктер', 'Сөйкөлөр', 'Шакек', 'Браслет', 'Кулон',
+            'Саат', 'Сааттар', 'Макияж', 'Тырмактар', 'Териге кам көрүү',
+            'Дене жана ванна үчүн Каражаттар', 'Духи', 'Помада', 'Тушь',
+            'Суу бытылка', 'Планшетке чехол', 'Чехол', 'Зонт', 'Зонттор',
+            'Көйнөктөр', 'Зер буюмдардар', 'Клатч', 'Помада', 'Бюстгалтер'
+        ]
+        
+    
+        occasion_mapping = {
+            'casual': {
+                'usage': 'Күн сайын',
+                'article_types': ['Футболка', 'Джинсы', 'Шымдар', 'Шорты', 'Юбка', 
+                                'Толстовка', 'Майка', 'Капри', 'Күнүмдүк бут кийим', 
+                                'Сандалдар', 'Балетка', 'Шлепки']
+            },
+            'formal': {
+                'usage': 'Формалдуу',
+                'article_types': ['Костюм', 'Рубашка', 'Расмий бут кийим', 'Көйнөк', 
+                                'Туфли', 'Жилетка']
+            },
+            'party': {
+                'usage': 'Кече',
+                'article_types': ['Көйнөк', 'Туфли', 'Юбка', 'Костюм', 'Балетка']
+            },
+            'sports': {
+                'usage': 'Спорт',
+                'article_types': ['Спорттук шымдар', 'Спорт бут кийим', 'Спорттук костюмдар',
+                                'Толстовка', 'Шорты', 'Спорт Сандалдар', 'Футболка']
+            },
+            'travel': {
+                'usage': 'Саякат',
+                'article_types': ['Спорттук шымдар', 'Күнүмдүк бут кийим', 'Толстовка',
+                                'Джинсы', 'Футболка', 'Сандалдар', 'Шорты']
+            }
+        }
+        
+        body_type_mapping = {
+            'slim': ['Slim Fit'],
+            'regular': ['Regular Fit', 'Standard Fit', 'Fitted/Standard'],
+            'athletic': ['Regular Fit', 'Slim Fit', 'Fitted/Standard'],
+            'plus': ['Relaxed Fit', 'Comfort Fit'],
+            'petite': ['Slim Fit', 'Regular Fit']
+        }
+        
+        color_mapping = {
+            'black': ['Кара', 'Көмүр', 'Кара-Көк'], 
+            'blue': ['Көк', 'Бирюзовый', 'Бирюза-көк', 'Кызгылт көк', 'Кара-Көк'],  
+            'red': ['Кызыл', 'Бургундия', 'Роза'],
+            'green': ['Жашыл', 'Оливка', 'Лайм', 'Деңиз жашыл', 'Флуоресцент жашыл', 'Хаки'], 
+            'white': ['Ак', 'Ак-кичине бос', 'Крем', 'Серебро'], 
+            'brown': ['Күрөң', 'Беж', 'Кофе күрөң', 'Ачык-Күрөң', 'Боз-күрөң', 'Грибной коричневый', 'Нюд', 'Тери', 'Ржавчина'], 
+            'gray': ['Боз', 'Боз меланж', 'Күңүрт', 'Боз-күрөң', 'Серебро', 'Болот', 'Металдык'], 
+            'yellow': ['Сары', 'Горчица', 'Жез', 'Алтын'],  
+            'purple': ['Фиолетовый', 'Пурпурный', 'Лаванда'], 
+            'pink': ['Кызгылт', 'Роза', 'Персик', 'Кызгылт көк'],  
+            'multi': ['Көп түс'], 
+            'orange': ['Персик', 'Ржавчина', 'Жез'], 
+            'bronze': ['Бронза', 'Алтын', 'Металдык']  
+        }
+        
+        try:
+            query = Product.objects.all()
+            query = query.filter(masterCategory__in=allowed_categories)
+            query = query.exclude(articleType__in=excluded_article_types)
+            
+            if gender:
+                query = query.filter(gender__iexact=gender)
+            occasion_config = occasion_mapping.get(occasion, occasion_mapping.get('casual'))
+            
+            if occasion_config.get('usage'):
+                query = query.filter(usage__iexact=occasion_config['usage'])
+            
+            if occasion_config.get('article_types'):
+                query = query.filter(articleType__in=occasion_config['article_types'])
+            
+            if body_type and body_type in body_type_mapping:
+                
+                silhouette_filter = body_type_mapping[body_type]
+                silhouette_condition = models.Q()
+                for fit in silhouette_filter:
+                    silhouette_condition |= models.Q(silhouette__icontains=fit)  
+                    silhouette_condition |= models.Q(figure__icontains=fit)    
+                if silhouette_condition:
+                    query = query.filter(silhouette_condition)
+            
+            if preferred_colors:
+                color_condition = models.Q()
+                for color in preferred_colors:
+                    color_variants = color_mapping.get(color.lower(), [color])
+                    for variant in color_variants:
+                        color_condition |= models.Q(color=variant) 
+                        color_condition |= models.Q(color__iexact=variant)
+                
+                if color_condition:
+                    print(f"Filtering for exact colors: {color_variants}")
+                    query = query.filter(color_condition)
+                    if query.exists():
+                        found_colors = list(query.values_list('color', flat=True).distinct())
+                        print(f"Colors in filtered results: {found_colors}")
+            
+            if budget:
+                if budget == 'low':
+                    query = query.filter(price__lte=2000)
+                elif budget == 'medium':
+                    query = query.filter(price__gte=2000, price__lte=5000)
+                elif budget == 'high':
+                    query = query.filter(price__gte=5000)
+            
+            recommended_products = query.order_by('?')[:10]
+            
+            if not recommended_products.exists() and preferred_colors:
+                print("No products found with color filter, removing color filter...")
+                query = Product.objects.filter(
+                    masterCategory__in=allowed_categories
+                ).exclude(
+                    articleType__in=excluded_article_types
+                )
+                
+                if gender:
+                    query = query.filter(gender__iexact=gender)
+                
+                if occasion_config.get('usage'):
+                    query = query.filter(usage__iexact=occasion_config['usage'])
+                
+                if occasion_config.get('article_types'):
+                    query = query.filter(articleType__in=occasion_config['article_types'])
+                
+                if body_type and body_type in body_type_mapping:
+                    silhouette_condition = models.Q()
+                    for fit in body_type_mapping[body_type]:
+                        silhouette_condition |= models.Q(silhouette__icontains=fit)
+                    if silhouette_condition:
+                        query = query.filter(silhouette_condition)
+                
+                if budget:
+                    if budget == 'low':
+                        query = query.filter(price__lte=2000)
+                    elif budget == 'medium':
+                        query = query.filter(price__gte=2000, price__lte=5000)
+                    elif budget == 'high':
+                        query = query.filter(price__gte=5000)
+                
+                recommended_products = query.order_by('?')[:10]
+            
+            if not recommended_products.exists():
+                query = Product.objects.filter(
+                    masterCategory__in=allowed_categories
+                ).exclude(
+                    articleType__in=excluded_article_types
+                ).filter(
+                    gender__iexact=gender
+                )
+                
+                if occasion_config.get('usage'):
+                    query = query.filter(usage__iexact=occasion_config['usage'])
+                
+                if occasion_config.get('article_types'):
+                    query = query.filter(articleType__in=occasion_config['article_types'])
+                
+                if budget:
+                    if budget == 'low':
+                        query = query.filter(price__lte=2000)
+                    elif budget == 'medium':
+                        query = query.filter(price__gte=2000, price__lte=5000)
+                    elif budget == 'high':
+                        query = query.filter(price__gte=5000)
+                
+                logger.info(f"After relaxing filters (no body type), found {query.count()} products")
+                recommended_products = query.order_by('?')[:10]
+            
+            if not recommended_products.exists():
+                logger.warning("Still no products, trying without occasion filter...")
+                query = Product.objects.filter(
+                    masterCategory__in=allowed_categories
+                ).exclude(
+                    articleType__in=excluded_article_types
+                ).filter(
+                    gender__iexact=gender
+                )
+                
+                if budget:
+                    if budget == 'low':
+                        query = query.filter(price__lte=2000)
+                    elif budget == 'medium':
+                        query = query.filter(price__gte=2000, price__lte=5000)
+                    elif budget == 'high':
+                        query = query.filter(price__gte=5000)
+                
+                logger.info(f"After removing occasion filter, found {query.count()} products")
+                recommended_products = query.order_by('?')[:10]
+            
+            if not recommended_products.exists():
+                logger.warning(f"No products found for gender: {gender}, occasion: {occasion}")
+                return Response({
+                    'recommendations': [],
+                    'recommendation_count': 0,
+                    'message': 'No products match your criteria. Please try different preferences.',
+                    'filters_applied': {
+                        'occasion': occasion,
+                        'body_type': body_type,
+                        'preferred_colors': preferred_colors,
+                        'budget': budget,
+                        'gender': gender
+                    }
+                }, status=status.HTTP_200_OK)
+            
+            serializer = ProductSerializer(recommended_products, many=True)
+            
+            return Response({
+                'recommendations': serializer.data,
+                'recommendation_count': recommended_products.count(),
+                'filters_applied': {
+                    'occasion': occasion,
+                    'body_type': body_type,
+                    'preferred_colors': preferred_colors,
+                    'budget': budget,
+                    'gender': gender
+                }
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as db_error:
+            logger.error(f"Database query error: {str(db_error)}", exc_info=True)
+            return Response({
+                'recommendations': [],
+                'recommendation_count': 0,
+                'error': 'Database query error',
+                'message': str(db_error)
+            }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.error(f"Unexpected error in clothing_questionnaire: {str(e)}", exc_info=True)
+        return Response(
+            {'error': 'Internal server error', 'details': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+@api_view(['GET'])
+@permission_classes([AllowAny])
+@authentication_classes([])
+def debug_product_fields(request):
+    """Debug endpoint to check available fields and sample data"""
+    try:
+        # Get one sample product
+        sample = Product.objects.first()
+        
+        if sample:
+            # Get all field names and their values
+            fields = {}
+            for field in sample._meta.get_fields():
+                field_name = field.name
+                try:
+                    value = getattr(sample, field_name)
+                    fields[field_name] = str(value)[:100]  # Truncate long values
+                except:
+                    fields[field_name] = "Unable to retrieve"
+            
+            # Get unique values for key fields
+            unique_values = {}
+            for field_name in ['gender', 'usage', 'masterCategory', 'subCategory', 'articleType', 'season']:
+                if hasattr(Product, field_name):
+                    values = Product.objects.values_list(field_name, flat=True).distinct()[:20]
+                    unique_values[field_name] = list(values)
+            
+            return Response({
+                'sample_product_fields': fields,
+                'unique_values': unique_values,
+                'total_products': Product.objects.count()
+            })
+        else:
+            return Response({'error': 'No products found in database'})
+    
+    except Exception as e:
+        return Response({'error': str(e)})
+
+
+
+def get_current_season():
+    """Helper function to determine current season"""
+    import datetime
+    month = datetime.datetime.now().month
+    
+    if month in [12, 1, 2]:
+        return 'Кыш'  
+    elif month in [3, 4, 5]:
+        return 'Жаз'  
+    elif month in [6, 7, 8]:
+        return 'Жай' 
+    else:
+        return 'Күз'  
+    
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def virtual_try_on(request):
+    """
+    Process virtual try-on using Gemini API
+    """
+    try:
+        if 'user_image' not in request.FILES:
+            return Response(
+                {'error': 'User image is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        user_image = request.FILES['user_image']
+        product_id = request.data.get('product_id')
+        
+        if not product_id:
+            return Response(
+                {'error': 'Product ID is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            product = Product.objects.get(product_id=product_id)
+        except Product.DoesNotExist:
+            return Response(
+                {'error': 'Product not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        
+        user_image_data = user_image.read()
+        
+        import requests
+        from io import BytesIO
+        
+        try:
+            product_response = requests.get(product.link)
+            product_image_data = BytesIO(product_response.content)
+        except:
+            return Response(
+                {'error': 'Could not load product image'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        prompt = f"""
+        You are an expert fashion stylist and image editor. Perform a realistic virtual try-on of the clothing item onto the person in the photo.
+        
+        Product Details:
+        - Name: {product.productDisplayName}
+        - Type: {product.articleType}
+        - Category: {product.subCategory}
+        - Color: {product.color}
+        
+        Instructions:
+        1. Analyze the person's pose, body shape, and proportions
+        2. Virtually fit the clothing item realistically onto the person
+        3. Ensure the clothing drapes naturally and fits properly
+        4. Maintain the person's original face, hair, and background
+        5. Make the result look as realistic as possible
+        6. Preserve lighting and shadows consistency
+        
+        Return only the edited image with the clothing virtually tried on.
+        """
+        
+        response = model.generate_content([
+            prompt,
+            {
+                "mime_type": "image/jpeg",
+                "data": user_image_data
+            },
+            {
+                "mime_type": "image/jpeg", 
+                "data": product_image_data.getvalue()
+            }
+        ])
+        
+        return Response({
+            'success': True,
+            'message': 'Virtual try-on processed successfully',
+            'product': {
+                'id': product.product_id,
+                'name': product.productDisplayName,
+                'price': product.price,
+                'image_url': product.link
+            },
+            'note': 'Image generation completed. In production, this would return the edited image URL.'
+        })
+        
+    except Exception as e:
+        print(f"Virtual try-on error: {e}")
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
         

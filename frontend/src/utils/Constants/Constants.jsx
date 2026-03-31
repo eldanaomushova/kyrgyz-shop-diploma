@@ -10,6 +10,7 @@ export const PATH = {
     favourite: "/favourite",
     signin: "/signin",
     signup: "/signup",
+    virtualTryOn: "/virtual-try-on",
 };
 
 export const NavLinks = [];

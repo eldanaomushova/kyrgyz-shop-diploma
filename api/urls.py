@@ -1,13 +1,16 @@
 from django.urls import path
 from . import views 
 from .views import (
+    debug_product_fields,
     login_user, 
     register_user, 
     get_products, 
     get_product_detail,
     initiate_payment,
     payment_callback,
-    payment_status
+    payment_status,
+    clothing_questionnaire,
+    virtual_try_on
 )
 
 urlpatterns = [
@@ -23,4 +26,8 @@ urlpatterns = [
     path('payment/initiate/', initiate_payment, name='initiate-payment'),
     path('payment/callback/', payment_callback, name='payment-callback'),
     path('payment/<int:payment_id>/status/', payment_status, name='payment-status'),
+    
+    path('questionnaire/', clothing_questionnaire, name='clothing-questionnaire'),
+    path('virtual-try-on/', virtual_try_on, name='virtual-try-on'),
+    path('api/debug/product-fields/', debug_product_fields, name='debug_product_fields'),
 ]

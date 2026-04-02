@@ -26,7 +26,7 @@ export const CartProvider = ({ children }) => {
 
         setCart((prev) =>
             prev.map((item) =>
-                item.product_id === productId
+                item.id === productId
                     ? { ...item, quantity: newQuantity }
                     : item
             )
@@ -44,7 +44,7 @@ export const CartProvider = ({ children }) => {
     };
 
     const removeFromCart = async (productId) => {
-        setCart((prev) => prev.filter((item) => item.product_id !== productId));
+        setCart((prev) => prev.filter((item) => item.id !== productId));
 
         try {
             const response = await fetch(
@@ -74,7 +74,7 @@ export const CartProvider = ({ children }) => {
             const response = await fetch("http://127.0.0.1:8000/api/cart/", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ product_id: product.product_id }),
+                body: JSON.stringify({ id: product.id }),
             });
             if (response.ok) fetchCart();
         } catch (err) {
@@ -83,7 +83,7 @@ export const CartProvider = ({ children }) => {
     };
 
     const clearCart = async () => {
-        const ids = cart.map((item) => item.product_id);
+        const ids = cart.map((item) => item.id);
         try {
             await Promise.all(
                 ids.map((id) =>

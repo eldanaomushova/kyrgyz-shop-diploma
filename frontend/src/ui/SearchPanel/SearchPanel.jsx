@@ -87,7 +87,7 @@ export const SearchPanel = ({ isOpen, onClose }) => {
                 <div className={styles.resultsList}>
                     {results.map((item) => (
                         <a
-                            key={item.id || item.product_id}
+                            key={item.id || item.id}
                             href={`/catalog?gender=${item.gender}&sub=${item.subCategory}&type=${item.articleType}`}
                             className={styles.resultItem}
                             onClick={() => {

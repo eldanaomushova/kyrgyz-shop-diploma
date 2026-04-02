@@ -3,29 +3,36 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
 
+
+from django.db import models
+
+from django.db import models
+
 class Product(models.Model):
-    product_id = models.IntegerField(unique=True, db_column='product_id')
-    productDisplayName = models.TextField(db_column='product_display_name')
-    masterCategory = models.CharField(max_length=100, db_column='master_category')
-    subCategory = models.CharField(max_length=100, db_column='sub_category')
-    articleType = models.CharField(max_length=100, db_column='article_type')
+    id = models.IntegerField(primary_key=True)
+    productDisplayName = models.TextField()
+    masterCategory = models.CharField(max_length=100)
+    subCategory = models.CharField(max_length=100)
+    articleType = models.CharField(max_length=100)
     
-    filename = models.CharField(max_length=255, db_column='filename')
-    link = models.URLField(max_length=500, db_column='link')
-    gender = models.CharField(max_length=50, db_column='gender')
-    season = models.CharField(max_length=50, db_column='season')
-    year = models.IntegerField(db_column='year')
-    usage = models.CharField(max_length=100, db_column='usage')
-    color = models.CharField(max_length=50, db_column='color')
-    price = models.FloatField(db_column='price')
-    brand = models.CharField(max_length=100, db_column='brand')
+    filename = models.CharField(max_length=255, blank=True, null=True)
+    link = models.URLField(max_length=500, blank=True, null=True)
+    gender = models.CharField(max_length=50)
+    season = models.CharField(max_length=50, blank=True, null=True)
+    year = models.IntegerField(blank=True, null=True)
+    usage = models.CharField(max_length=100, blank=True, null=True)
+    color = models.CharField(max_length=50, blank=True, null=True)
+    price = models.FloatField()
+    brand = models.CharField(max_length=100, blank=True, null=True)
     
-    silhouette = models.CharField(max_length=100, null=True, blank=True, db_column='silhouette')
-    figure = models.CharField(max_length=100, null=True, blank=True, db_column='figure')
+    silhouette = models.CharField(max_length=100, blank=True, null=True, db_column='Silhouette')
+    figure = models.CharField(max_length=100, blank=True, null=True)
+
+    class Meta:
+        db_table = 'api_product'
 
     def __str__(self):
         return f"{self.productDisplayName} ({self.price} $)"
-    
 
 class CartItem(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)

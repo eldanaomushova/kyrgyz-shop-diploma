@@ -20,8 +20,8 @@ def chat_endpoint(request):
     return JsonResponse({"error": "Invalid method"}, status=405)
 
 @csrf_exempt
-def add_to_cart(request, product_id):
-    product = get_object_or_404(Product, product_id=product_id)
+def add_to_cart(request, id):
+    product = get_object_or_404(Product, id=id)
     cart_item, created = CartItem.objects.get_or_create(product=product)
     if not created:
         cart_item.quantity += 1

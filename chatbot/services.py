@@ -99,14 +99,14 @@ agent_executor = AgentExecutor(
 
 def format_with_buttons(text):
     match = re.search(r"ID[:\s]*(\d+)", text, re.IGNORECASE)
-    product_id = match.group(1) if match else None
+    id = match.group(1) if match else None
 
     html_content = markdown.markdown(text)
 
-    if product_id:
+    if id:
         button_html = f"""
         <div style="margin-top: 10px; display: flex; gap: 8px;">
-            <a href="http://localhost:3000/product/{product_id}" 
+            <a href="http://localhost:3000/product/{id}" 
                target="_blank"
                style="text-decoration:none; background-color:#007bff; color:white; padding:8px 16px; border-radius:5px; font-weight:bold; font-size:13px;">
                Көрүү

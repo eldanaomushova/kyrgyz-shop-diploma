@@ -52,7 +52,7 @@ const VirtualTryOnPage = () => {
         try {
             const formData = new FormData();
             formData.append("user_image", userImage);
-            formData.append("product_id", selectedProduct.product_id);
+            formData.append("id", selectedProduct.id);
 
             const response = await axios.post(
                 "/api/virtual-try-on/",
@@ -110,10 +110,7 @@ const VirtualTryOnPage = () => {
 
                     <div className="recommendations-grid">
                         {recommendations.map((product) => (
-                            <div
-                                key={product.product_id}
-                                className="product-card"
-                            >
+                            <div key={product.id} className="product-card">
                                 <img
                                     src={product.link}
                                     alt={product.productDisplayName}

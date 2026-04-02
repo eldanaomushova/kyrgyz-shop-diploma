@@ -20,7 +20,7 @@ class Command(BaseCommand):
                 price_val = float(raw_price) if raw_price and raw_price.strip() else 0.0
 
                 Product.objects.create(
-                    product_id=int(float(row['id'])),
+                    id=int(float(row['id'])),
                     productDisplayName=row.get('productDisplayName', 'Unknown'),
                     link=row.get('link', ''),
                     gender=row.get('gender', ''),

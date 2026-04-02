@@ -90,8 +90,8 @@ export const CatalogModule = () => {
                         {products?.length > 0 ? (
                             products.map((product) => (
                                 <Link
-                                    to={`/product/${product.product_id}`}
-                                    key={product.product_id}
+                                    to={`/product/${product.id}`}
+                                    key={product.id}
                                     className={styles.productCard}
                                 >
                                     <div className={styles.imageWrapper}>

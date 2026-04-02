@@ -56,7 +56,7 @@ export const CartModule = () => {
             <div className={styles.cartContent}>
                 <div className={styles.itemsList}>
                     {cart.map((item) => (
-                        <div key={item.product_id} className={styles.cartItem}>
+                        <div key={item.id} className={styles.cartItem}>
                             <img
                                 src={item.link}
                                 alt={item.productDisplayName}
@@ -74,7 +74,7 @@ export const CartModule = () => {
                                 </div>
 
                                 <div className={styles.itemDetails}>
-                                    Артикул: {item.product_id}
+                                    Артикул: {item.id}
                                     <br />
                                     Түсү: {item.color || "Стандарттык"}
                                     <br />
@@ -85,7 +85,7 @@ export const CartModule = () => {
                                     <button
                                         onClick={() =>
                                             updateQuantity(
-                                                item.product_id,
+                                                item.id,
                                                 item.quantity - 1
                                             )
                                         }
@@ -97,7 +97,7 @@ export const CartModule = () => {
                                     <button
                                         onClick={() =>
                                             updateQuantity(
-                                                item.product_id,
+                                                item.id,
                                                 item.quantity + 1
                                             )
                                         }
@@ -108,7 +108,7 @@ export const CartModule = () => {
                             </div>
                             <button
                                 className={styles.removeBtn}
-                                onClick={() => removeFromCart(item.product_id)}
+                                onClick={() => removeFromCart(item.id)}
                             >
                                 <img src={trash} alt="Өчүрүү" width="16" />
                             </button>

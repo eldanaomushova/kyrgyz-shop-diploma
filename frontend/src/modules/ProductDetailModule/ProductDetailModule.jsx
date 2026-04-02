@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import styles from "./ProductDetailModule.module.scss";
 import { Typography } from "../../ui/Typography/Typography";
 import { useCart } from "../../modules/CartProvider/CartProvider";
@@ -8,9 +8,12 @@ import { Button } from "../../ui/Buttons/Button";
 
 export const ProductDetailModule = () => {
     const { id } = useParams();
+    const navigate = useNavigate();
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const { addToCart } = useCart();
+    console.log("Product ID from params:", id);
 
     const handleAddToCart = () => {
         if (product) {
@@ -32,24 +35,77 @@ export const ProductDetailModule = () => {
 
     useEffect(() => {
         const fetchProduct = async () => {
+            // Проверяем наличие id
+            if (!id || id === "undefined" || id === "null") {
+                setError("Неверный ID товара");
+                setLoading(false);
+                return;
+            }
+
+            setLoading(true);
+            setError(null);
+
             try {
                 const response = await fetch(
                     `http://127.0.0.1:8000/api/products/detail/${id}/`
                 );
-                if (!response.ok) throw new Error("Product not found");
+
+                if (response.status === 400) {
+                    setError("Неверный формат ID товара");
+                    setLoading(false);
+                    return;
+                }
+
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        setError("Товар не найден");
+                    } else {
+                        setError("Ошибка при загрузке товара");
+                    }
+                    setLoading(false);
+                    return;
+                }
+
                 const data = await response.json();
                 setProduct(data);
             } catch (error) {
                 console.error("Error:", error);
+                setError("Ошибка соединения с сервером");
             } finally {
                 setLoading(false);
             }
         };
+
         fetchProduct();
     }, [id]);
 
+    // Редирект на главную если нет id
+    useEffect(() => {
+        if (!id || id === "undefined" || id === "null") {
+            const timer = setTimeout(() => {
+                navigate("/");
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [id, navigate]);
+
     if (loading) return <div className={styles.loader}>Загрузка...</div>;
-    if (!product) return <div className={styles.error}>Товар не найден</div>;
+
+    if (error) {
+        return (
+            <div className={styles.error}>
+                <Typography variant="h2">Ошибка</Typography>
+                <Typography>{error}</Typography>
+                <Button
+                    variant="blackButton"
+                    text="Вернуться на главную"
+                    onClick={() => navigate("/")}
+                />
+            </div>
+        );
+    }
+
+    if (!product) return null;
 
     return (
         <div className={styles.wrapper}>
@@ -98,7 +154,7 @@ export const ProductDetailModule = () => {
                                 Артикул:
                             </Typography>
                             <Typography className={styles.detailValue}>
-                                {product.product_id}
+                                {product.id}
                             </Typography>
                         </div>
                         <div className={styles.detailItem}>

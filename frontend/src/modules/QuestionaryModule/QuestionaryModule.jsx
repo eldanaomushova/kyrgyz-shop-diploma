@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import axios from "axios";
-import "./Questionnaire.css";
+import styles from "./QuestionaryModule.module.scss";
 
-const Questionnaire = ({ onComplete }) => {
+const QuestionaryModule = ({ onComplete }) => {
     const [step, setStep] = useState(0);
     const [answers, setAnswers] = useState({
         gender: "",
@@ -15,47 +15,49 @@ const Questionnaire = ({ onComplete }) => {
     const questions = [
         {
             id: "gender",
-            question: "What is your gender?",
+            question: "Сиздин жынысыңыз кандай?",
             type: "single",
-            options: ["Аялдар", "Эркек"], // Women, Men in Kyrgyz
+            options: ["Аялдар", "Эркек"],
         },
         {
             id: "occasion",
-            question: "What occasion are you shopping for?",
+            question:
+                "Сиз кандай иш-чарага (майрамга) карата соода кылып жатасыз?",
             type: "single",
-            options: ["Casual", "Formal", "Party", "Work"],
+            options: ["Күнүмдүк", "Расмий", "Кечки", "Жумуш"],
         },
         {
             id: "body_type",
-            question: "What is your body type?",
+            question: "Сиздин дене түрүңүз кандай?",
             type: "single",
-            options: ["Slim", "Athletic", "Curvy", "Plus Size"],
+            options: ["Арык", "Спорттук", "Толукча", "Чоң өлчөмдөгү"],
         },
         {
             id: "preferred_colors",
-            question: "What are your preferred colors? (Select multiple)",
+            question:
+                "Сиздин предпочиттелген түстериниз кандай? (Көбүркө санап коюнуз)",
             type: "multiple",
             options: [
-                "Black",
-                "White",
-                "Blue",
-                "Red",
-                "Green",
-                "Yellow",
-                "Pink",
-                "Purple",
-                "Brown",
-                "Gray",
+                "Кара",
+                "Ак",
+                "Көк",
+                "Кызыл",
+                "Жашыл",
+                "Сары",
+                "Кызгылт",
+                "Сыя",
+                "Күрөң",
+                "Боз",
             ],
         },
         {
             id: "budget",
-            question: "What is your budget range?",
+            question: "Сиздин бюджет диапазоныңыз кандай?",
             type: "single",
             options: [
-                "Low (under 2000)",
-                "Medium (2000-5000)",
-                "High (over 5000)",
+                "Кичине (2000 дан аз)",
+                "Орточо (2000-5000)",
+                "Жогору (5000 дан ашык)",
             ],
         },
     ];
@@ -83,7 +85,6 @@ const Questionnaire = ({ onComplete }) => {
         if (step < questions.length - 1) {
             setStep(step + 1);
         } else {
-            // Submit questionnaire
             submitQuestionnaire();
         }
     };
@@ -101,7 +102,12 @@ const Questionnaire = ({ onComplete }) => {
                 occasion: answers.occasion.toLowerCase(),
                 body_type: answers.body_type.toLowerCase().replace(" ", "_"),
                 preferred_colors: answers.preferred_colors,
-                budget: answers.budget.toLowerCase().split(" ")[0], // Extract 'low', 'medium', 'high'
+                budget:
+                    answers.budget === "Кичине (2000 дан аз)"
+                        ? "low"
+                        : answers.budget === "Орточо (2000-5000)"
+                          ? "medium"
+                          : "high",
             });
 
             onComplete(response.data);
@@ -118,26 +124,26 @@ const Questionnaire = ({ onComplete }) => {
             : answers[currentQuestion.id] !== "";
 
     return (
-        <div className="questionnaire">
-            <div className="questionnaire-header">
+        <div className={styles.questionnaire}>
+            <div className={styles.header}>
                 <h2>Find Your Perfect Style</h2>
-                <div className="progress-bar">
+                <div className={styles.progressBar}>
                     <div
-                        className="progress-fill"
+                        className={styles.progressFill}
                         style={{
                             width: `${((step + 1) / questions.length) * 100}%`,
                         }}
                     ></div>
                 </div>
-                <span className="step-counter">
+                <span className={styles.stepCounter}>
                     Question {step + 1} of {questions.length}
                 </span>
             </div>
 
-            <div className="question-container">
+            <div className={styles.questionContainer}>
                 <h3>{currentQuestion.question}</h3>
 
-                <div className="options-container">
+                <div className={styles.optionsContainer}>
                     {currentQuestion.options.map((option, index) => {
                         const isSelected =
                             currentQuestion.type === "multiple"
@@ -149,7 +155,7 @@ const Questionnaire = ({ onComplete }) => {
                         return (
                             <button
                                 key={index}
-                                className={`option-button ${isSelected ? "selected" : ""}`}
+                                className={`${styles.optionButton} ${isSelected ? styles.selected : ""}`}
                                 onClick={() =>
                                     handleAnswer(currentQuestion.id, option)
                                 }
@@ -157,7 +163,9 @@ const Questionnaire = ({ onComplete }) => {
                                 {option}
                                 {currentQuestion.type === "multiple" &&
                                     isSelected && (
-                                        <span className="checkmark">✓</span>
+                                        <span className={styles.checkmark}>
+                                            ✓
+                                        </span>
                                     )}
                             </button>
                         );
@@ -165,15 +173,17 @@ const Questionnaire = ({ onComplete }) => {
                 </div>
             </div>
 
-            <div className="navigation-buttons">
+            <div className={styles.navigationButtons}>
                 {step > 0 && (
-                    <button className="nav-button prev" onClick={handlePrev}>
+                    <button
+                        className={`${styles.navButton} ${styles.prev}`}
+                        onClick={handlePrev}
+                    >
                         Previous
                     </button>
                 )}
-
                 <button
-                    className="nav-button next"
+                    className={`${styles.navButton} ${styles.next}`}
                     onClick={handleNext}
                     disabled={!isAnswered}
                 >
@@ -186,4 +196,4 @@ const Questionnaire = ({ onComplete }) => {
     );
 };
 
-export default Questionnaire;
+export default QuestionaryModule;

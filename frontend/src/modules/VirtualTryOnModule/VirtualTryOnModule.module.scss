@@ -1,0 +1,305 @@
+// VirtualTryOnModule.module.scss
+.virtualTryOnPage {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 2rem 0;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+
+    h1 {
+        text-align: center;
+        color: white;
+        margin-bottom: 1rem;
+        font-size: 2.5rem;
+    }
+
+    > p {
+        text-align: center;
+        color: rgba(255, 255, 255, 0.9);
+        margin-bottom: 2rem;
+        font-size: 1.1rem;
+    }
+}
+
+.backButton {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-bottom: 2rem;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+
+    &:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: translateX(-5px);
+    }
+}
+
+.recommendationsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.productCard {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+
+    &:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15);
+    }
+}
+
+.productImage {
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
+}
+
+.productInfo {
+    padding: 1rem;
+
+    h3 {
+        margin: 0 0 0.5rem 0;
+        font-size: 1.1rem;
+        color: #333;
+    }
+
+    .price {
+        color: #667eea;
+        font-weight: bold;
+        font-size: 1.2rem;
+        margin: 0.5rem 0;
+    }
+
+    .category {
+        color: #666;
+        font-size: 0.9rem;
+        margin: 0.5rem 0;
+    }
+}
+
+.tryOnButton {
+    width: 100%;
+    padding: 0.75rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: transform 0.3s ease;
+
+    &:hover {
+        transform: translateY(-2px);
+    }
+}
+
+.tryOnContainer {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin: 2rem 0;
+}
+
+.selectedProduct {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+
+    h3 {
+        margin-bottom: 1rem;
+        color: #333;
+    }
+}
+
+.selectedProductImage {
+    width: 100%;
+    max-height: 400px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.productDetails {
+    h4 {
+        margin: 0 0 0.5rem 0;
+        color: #333;
+    }
+
+    p {
+        color: #667eea;
+        font-weight: bold;
+        font-size: 1.2rem;
+    }
+}
+
+.uploadSection {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+
+    h3 {
+        margin-bottom: 1rem;
+        color: #333;
+    }
+
+    p {
+        color: #666;
+        margin-bottom: 1.5rem;
+    }
+}
+
+.uploadButton {
+    padding: 0.75rem 1.5rem;
+    background: #f0f0f0;
+    color: #333;
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+
+    &:hover {
+        background: #e0e0e0;
+        border-color: #667eea;
+    }
+}
+
+.imagePreview {
+    margin: 1rem 0;
+
+    .previewImage {
+        max-width: 100%;
+        max-height: 300px;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+    }
+}
+
+.changePhotoButton {
+    padding: 0.5rem 1rem;
+    background: #f0f0f0;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+
+    &:hover {
+        background: #e0e0e0;
+    }
+}
+
+.tryOnActionButton {
+    width: 100%;
+    padding: 1rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    margin-top: 1rem;
+    transition: all 0.3s ease;
+
+    &:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+}
+
+.resultSection {
+    margin-top: 2rem;
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+
+    h3 {
+        margin-bottom: 1rem;
+        color: #333;
+    }
+}
+
+.resultCard {
+    p {
+        margin: 0.5rem 0;
+        color: #333;
+    }
+
+    .note {
+        color: #666;
+        font-style: italic;
+        font-size: 0.9rem;
+    }
+}
+
+.resultActions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.addToCartButton,
+.tryAnotherButton {
+    flex: 1;
+    padding: 0.75rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.addToCartButton {
+    background: #4caf50;
+    color: white;
+
+    &:hover {
+        background: #45a049;
+    }
+}
+
+.tryAnotherButton {
+    background: #f0f0f0;
+    color: #333;
+
+    &:hover {
+        background: #e0e0e0;
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 0 1rem;
+    }
+
+    .tryOnContainer {
+        grid-template-columns: 1fr;
+    }
+
+    .recommendationsGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .resultActions {
+        flex-direction: column;
+    }
+}

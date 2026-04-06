@@ -2,6 +2,8 @@ import React, { useState, useRef } from "react";
 import axios from "axios";
 import QuestionaryModule from "../../modules/QuestionaryModule/QuestionaryModule";
 import styles from "./VirtualTryOnModule.module.scss";
+import { Typography } from "../../ui/Typography/Typography";
+import { Button } from "../../ui/Buttons/Button";
 
 const VirtualTryOnModule = () => {
     const [stage, setStage] = useState("questionnaire");
@@ -10,6 +12,7 @@ const VirtualTryOnModule = () => {
     const [userImage, setUserImage] = useState(null);
     const [tryOnResult, setTryOnResult] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [generatedImageUrl, setGeneratedImageUrl] = useState(null);
     const fileInputRef = useRef(null);
 
     const getCookie = (name) => {
@@ -37,12 +40,17 @@ const VirtualTryOnModule = () => {
     const handleProductSelect = (product) => {
         setSelectedProduct(product);
         setStage("try-on");
+        setTryOnResult(null);
+        setGeneratedImageUrl(null);
+        setUserImage(null); // Reset user image when new product selected
     };
 
     const handleImageUpload = (event) => {
         const file = event.target.files[0];
         if (file) {
             setUserImage(file);
+            setTryOnResult(null);
+            setGeneratedImageUrl(null);
         }
     };
 
@@ -52,11 +60,21 @@ const VirtualTryOnModule = () => {
         setLoading(true);
         try {
             const formData = new FormData();
-            formData.append("user_image", userImage);
-            formData.append("id", selectedProduct.id);
+            formData.append("person_image", userImage);
+
+            if (selectedProduct.link) {
+                const productImageBlob = await fetch(selectedProduct.link).then(
+                    (res) => res.blob()
+                );
+                formData.append(
+                    "garment_image",
+                    productImageBlob,
+                    "garment.jpg"
+                );
+            }
 
             const response = await axios.post(
-                "/api/virtual-try-on/",
+                "/api/virtual-try-on/image-try-on/",
                 formData,
                 {
                     headers: {
@@ -67,9 +85,17 @@ const VirtualTryOnModule = () => {
             );
 
             setTryOnResult(response.data);
+
+            if (response.data.result_url) {
+                setGeneratedImageUrl(response.data.result_url);
+            } else if (response.data.generated_image_url) {
+                setGeneratedImageUrl(response.data.generated_image_url);
+            } else if (response.data.generated_image_base64) {
+                setGeneratedImageUrl(response.data.generated_image_base64);
+            }
         } catch (error) {
             console.error("Error during virtual try-on:", error);
-            alert("Error processing virtual try-on. Please try again.");
+            alert("Виртуалдык сынап көрүүдө ката кетти. Кайра аракет кылыңыз.");
         } finally {
             setLoading(false);
         }
@@ -81,18 +107,15 @@ const VirtualTryOnModule = () => {
         setSelectedProduct(null);
         setUserImage(null);
         setTryOnResult(null);
+        setGeneratedImageUrl(null);
     };
 
-    // Questionnaire Stage
     if (stage === "questionnaire") {
         return (
-            <div className={styles.virtualTryOnPage}>
+            <div
+                className={`${styles.virtualTryOnPage} ${styles.questionnaireStage}`}
+            >
                 <div className={styles.container}>
-                    <h1>Virtual Try-On Experience</h1>
-                    <p>
-                        Answer a few questions to get personalized clothing
-                        recommendations, then try them on virtually!
-                    </p>
                     <QuestionaryModule
                         onComplete={handleQuestionnaireComplete}
                     />
@@ -101,18 +124,22 @@ const VirtualTryOnModule = () => {
         );
     }
 
-    // Recommendations Stage
     if (stage === "recommendations") {
         return (
             <div className={styles.virtualTryOnPage}>
                 <div className={styles.container}>
-                    <h1>Your Personalized Recommendations</h1>
-                    <button
+                    <Typography
+                        variant="h1"
+                        className={styles.headerVirtualTryOn}
+                    >
+                        Жекелештирилген сунуштарыңыз
+                    </Typography>
+                    <Button
                         className={styles.backButton}
                         onClick={() => setStage("questionnaire")}
                     >
-                        ← Back to Questionnaire
-                    </button>
+                        ← Сурамжылоого кайтуу
+                    </Button>
 
                     <div className={styles.recommendationsGrid}>
                         {recommendations.map((product) => (
@@ -126,22 +153,30 @@ const VirtualTryOnModule = () => {
                                     className={styles.productImage}
                                 />
                                 <div className={styles.productInfo}>
-                                    <h3>{product.productDisplayName}</h3>
-                                    <p className={styles.price}>
+                                    <Typography variant="h3">
+                                        {product.productDisplayName}
+                                    </Typography>
+                                    <Typography
+                                        variant="h4"
+                                        className={styles.price}
+                                    >
                                         ${product.price}
-                                    </p>
-                                    <p className={styles.category}>
+                                    </Typography>
+                                    <Typography
+                                        variant="body2"
+                                        className={styles.category}
+                                    >
                                         {product.articleType} -{" "}
                                         {product.subCategory}
-                                    </p>
-                                    <button
+                                    </Typography>
+                                    <Button
                                         className={styles.tryOnButton}
                                         onClick={() =>
                                             handleProductSelect(product)
                                         }
                                     >
-                                        Try On Virtually
-                                    </button>
+                                        Виртуалдык сынап көрүү
+                                    </Button>
                                 </div>
                             </div>
                         ))}
@@ -151,38 +186,49 @@ const VirtualTryOnModule = () => {
         );
     }
 
-    // Try-On Stage
     if (stage === "try-on") {
         return (
             <div className={styles.virtualTryOnPage}>
                 <div className={styles.container}>
-                    <h1>Virtual Try-On</h1>
+                    <Typography
+                        variant="h1"
+                        className={styles.headerVirtualTryOn}
+                    >
+                        Виртуалдык сынап көрүү
+                    </Typography>
                     <button
                         className={styles.backButton}
                         onClick={() => setStage("recommendations")}
                     >
-                        ← Back to Recommendations
+                        ← Сунуштарга кайтуу
                     </button>
 
                     <div className={styles.tryOnContainer}>
                         <div className={styles.selectedProduct}>
-                            <h3>Selected Item</h3>
+                            <Typography variant="h3">Тандалган буюм</Typography>
                             <img
                                 src={selectedProduct.link}
                                 alt={selectedProduct.productDisplayName}
                                 className={styles.selectedProductImage}
                             />
                             <div className={styles.productDetails}>
-                                <h4>{selectedProduct.productDisplayName}</h4>
-                                <p>${selectedProduct.price}</p>
+                                <Typography variant="h4">
+                                    {selectedProduct.productDisplayName}
+                                </Typography>
+                                <Typography variant="h5">
+                                    ${selectedProduct.price}
+                                </Typography>
                             </div>
                         </div>
 
                         <div className={styles.uploadSection}>
-                            <h3>Upload Your Photo</h3>
-                            <p>
-                                Upload a front-facing photo for the best results
-                            </p>
+                            <Typography variant="h3">
+                                Сүрөтүңүздү жүктөңүз
+                            </Typography>
+                            <Typography variant="body2">
+                                Эң жакшы натыйжа алуу үчүн толук дене сүрөтүн
+                                жүктөңүз
+                            </Typography>
 
                             <input
                                 type="file"
@@ -197,7 +243,7 @@ const VirtualTryOnModule = () => {
                                     className={styles.uploadButton}
                                     onClick={() => fileInputRef.current.click()}
                                 >
-                                    Choose Photo
+                                    Менин сүрөтүмдү жүктөө
                                 </button>
                             ) : (
                                 <div className={styles.imagePreview}>
@@ -212,7 +258,7 @@ const VirtualTryOnModule = () => {
                                             fileInputRef.current.click()
                                         }
                                     >
-                                        Change Photo
+                                        Сүрөттү өзгөртүү
                                     </button>
                                 </div>
                             )}
@@ -222,29 +268,70 @@ const VirtualTryOnModule = () => {
                                 onClick={handleTryOn}
                                 disabled={!userImage || loading}
                             >
-                                {loading ? "Processing..." : "Try On Now"}
+                                {loading
+                                    ? "Иштетүүдө..."
+                                    : "Кийимди сынап көрүү"}
                             </button>
                         </div>
                     </div>
 
-                    {tryOnResult && (
+                    {(tryOnResult || generatedImageUrl) && (
                         <div className={styles.resultSection}>
-                            <h3>Your Virtual Try-On Result</h3>
+                            <Typography variant="h3">
+                                Виртуалдык сынап көрүү натыйжаңыз
+                            </Typography>
+
+                            {generatedImageUrl && (
+                                <div className={styles.generatedImageContainer}>
+                                    <img
+                                        src={generatedImageUrl}
+                                        alt="Virtual try-on result"
+                                        className={styles.generatedImage}
+                                        onError={(e) => {
+                                            console.error(
+                                                "Image failed to load:",
+                                                generatedImageUrl
+                                            );
+                                            e.target.src =
+                                                "https://via.placeholder.com/800x1000/ff0000/ffffff?text=Image+Load+Error";
+                                        }}
+                                    />
+                                </div>
+                            )}
+
                             <div className={styles.resultCard}>
-                                <p>{tryOnResult.message}</p>
-                                <p className={styles.note}>
-                                    {tryOnResult.note}
-                                </p>
+                                {tryOnResult?.message && (
+                                    <Typography variant="body1">
+                                        {tryOnResult.message}
+                                    </Typography>
+                                )}
+                                {tryOnResult?.note && (
+                                    <Typography
+                                        variant="body2"
+                                        className={styles.note}
+                                    >
+                                        {tryOnResult.note}
+                                    </Typography>
+                                )}
                                 <div className={styles.resultActions}>
-                                    <button className={styles.addToCartButton}>
-                                        Add to Cart - ${selectedProduct.price}
-                                    </button>
-                                    <button
+                                    <Button
+                                        className={styles.addToCartButton}
+                                        variant="secondary"
+                                        onClick={() => {
+                                            alert(
+                                                `Себетке кошулду: ${selectedProduct.productDisplayName} - $${selectedProduct.price}`
+                                            );
+                                        }}
+                                    >
+                                        Себетке кошуу - ${selectedProduct.price}
+                                    </Button>
+                                    <Button
+                                        variant="secondary"
                                         className={styles.tryAnotherButton}
                                         onClick={resetProcess}
                                     >
-                                        Try Another Item
-                                    </button>
+                                        Башка буюмду сынап көрүү
+                                    </Button>
                                 </div>
                             </div>
                         </div>

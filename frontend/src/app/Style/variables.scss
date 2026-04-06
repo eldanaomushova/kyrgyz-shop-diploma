@@ -26,10 +26,6 @@ $line-height-small: 120%;
     --state-warning: #e2b93b;
     --state-error: #eb5757;
 
-    /* Button Colors */
-    --button-hover: #1a1f3d;
-    --button-active: #0f1426;
-
     /* Basic colors */
     --white: #fff;
     --white2: #f4f4f4;
@@ -37,4 +33,57 @@ $line-height-small: 120%;
     --dark-grey: #222;
     --mid-grey: #4a4a4a;
     --grey-grey3: #6c757d;
+
+    /* Gradient Colors */
+    --gradient-start: #667eea;
+    --gradient-end: #764ba2;
+
+    --ui-border: #dadada;
+    --ui-shadow: rgba(0, 0, 0, 0.1);
+    --ui-shadow-hover: rgba(102, 126, 234, 0.3);
+
+    /* Text Colors */
+    --text-primary: #222;
+    --text-secondary: #666;
+    --text-tertiary: #333;
+    --text-muted: #6c757d;
+    --text-light: #fff;
+
+    /* Button Colors */
+    --button-hover: #1a1f3d;
+    --button-active: #0f1426;
+    --button-prev-bg: #dadada;
+    --button-prev-hover: #f4f4f4;
+    --button-prev-text: #666;
+    --button-next-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --button-next-shadow: rgba(102, 126, 234, 0.3);
+
+    /* Component Colors */
+    --progress-bg: #f4f4f4;
+    --progress-fill: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    --option-border: #dadada;
+    --option-hover-bg: #7a8bbd;
+    --option-hover-border: #7a8bbd;
+    --option-selected-bg: #242a54;
+    --option-selected-text: #fff;
+
+    /* Product Card Colors */
+    --product-card-bg: #fff;
+    --product-card-shadow: rgba(0, 0, 0, 0.1);
+    --product-card-shadow-hover: rgba(0, 0, 0, 0.15);
+    --product-price-color: #667eea;
+    --product-category-color: #666;
+
+    /* Try On Colors */
+    --upload-button-bg: #f0f0f0;
+    --upload-button-border: #ccc;
+    --upload-button-hover-bg: #e0e0e0;
+    --upload-button-hover-border: #667eea;
+    --change-photo-bg: #f0f0f0;
+    --change-photo-hover-bg: #e0e0e0;
+    --add-to-cart-bg: #4caf50;
+    --add-to-cart-hover-bg: #45a049;
+    --try-another-bg: #f0f0f0;
+    --try-another-text: #333;
+    --try-another-hover-bg: #e0e0e0;
 }

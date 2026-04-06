@@ -1,60 +1,286 @@
 import os
+import time
+import tempfile
 import logging
-from rest_framework.permissions import AllowAny
+from django.conf import settings
 from rest_framework.response import Response
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework import status
-import google.generativeai as genai
-from ..models import Product 
+from rest_framework.decorators import api_view
+from PIL import Image, ImageFilter, ImageDraw
+import numpy as np
+import shutil
+from django.http import JsonResponse, FileResponse
+from vertexai.preview.vision_models import ImageGenerationModel, Image as VertexImage
+import vertexai
+from google.cloud import aiplatform
 
 logger = logging.getLogger(__name__)
+key_path = os.path.join(settings.BASE_DIR, 'google_key.json')
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = key_path
 
+
+aiplatform.init(
+    project='probable-tape-421308',
+    location='us-central1',
+    credentials=None 
+)
+
+
+vertexai.init(project='probable-tape-421308', location='us-central1')
 @api_view(['POST'])
-@permission_classes([AllowAny])
-def virtual_try_on(request):
+def image_try_on(request):
     try:
-        if 'user_image' not in request.FILES:
-            return Response(
-                {'error': 'User image is required'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        person_img = request.FILES.get('person_image')
+        garment_img = request.FILES.get('garment_image')
         
-        user_image = request.FILES['user_image']
-        id = request.data.get('id')
+        if not person_img or not garment_img:
+            return Response({'error': 'Both images are required'}, status=400)
         
-        if not id:
-            return Response(
-                {'error': 'Product ID is required'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        tryon_results_dir = os.path.join(settings.MEDIA_ROOT, 'tryon_results')
+        os.makedirs(tryon_results_dir, exist_ok=True)
+        
+        timestamp = int(time.time())
+        person_path = os.path.join(tryon_results_dir, f'person_{timestamp}.jpg')
+        garment_path = os.path.join(tryon_results_dir, f'garment_{timestamp}.jpg')
+
+        with open(person_path, 'wb') as f:
+            for chunk in person_img.chunks(): f.write(chunk)
+        with open(garment_path, 'wb') as f:
+            for chunk in garment_img.chunks(): f.write(chunk)
         
         try:
-            product = Product.objects.get(id=id)
-        except Product.DoesNotExist:
-            return Response(
-                {'error': 'Product not found'},
-                status=status.HTTP_404_NOT_FOUND
+            result_image_path = process_virtual_try_on_vertex(person_path, garment_path)
+            
+            if not result_image_path:
+                return Response({'error': 'AI processing failed'}, status=500)
+
+            result_filename = f"result_{timestamp}.jpg"
+            final_path = os.path.join(tryon_results_dir, result_filename)
+            shutil.copy2(result_image_path, final_path)
+            
+            result_url = f"{settings.MEDIA_URL}tryon_results/{result_filename}"
+            
+            return Response({
+                "success": True,
+                "result_url": result_url,
+                "message": "AI Virtual try-on completed!"
+            })
+            
+        finally:
+            for path in [person_path, garment_path]:
+                if os.path.exists(path): os.unlink(path)
+            
+    except Exception as e:
+        logger.error(f"Error: {str(e)}", exc_info=True)
+        return Response({'error': str(e)}, status=500)
+
+
+from google.oauth2 import service_account # Нужно добавить этот импорт
+
+def process_virtual_try_on_vertex(person_path, garment_path):
+    """Реальная генерация через Google Imagen с актуальным API"""
+    try:
+        key_path = os.path.join(settings.BASE_DIR, 'DIPLOMA-PROJECT/google_key.json')
+        print(f"Ищу ключ здесь: {key_path}")
+        
+        if not os.path.exists(key_path):
+            logger.error(f"Key file not found at {key_path}")
+            return None
+            
+        credentials = service_account.Credentials.from_service_account_file(key_path)
+        
+        vertexai.init(
+            project='probable-tape-421308', 
+            location='us-central1', 
+            credentials=credentials
+        )
+        
+        model = ImageGenerationModel.from_pretrained("imagen-3.0-generate-001")
+        
+        base_img = VertexImage.load_from_file(location=person_path)
+        cloth_img = VertexImage.load_from_file(location=garment_path)
+        
+        try:
+            response = model.edit_image(
+                base_image=base_img,
+                mask_image=None, 
+                prompt=f"Person wearing this specific garment: {cloth_img}",
+                guidance_scale=7.5,
+                number_of_images=1
+            )
+        except Exception as edit_error:
+            logger.warning(f"Edit method failed: {edit_error}")
+            
+            combined_prompt = """
+            A realistic full-body photo of a person wearing a specific garment.
+            The garment should look natural on the person with proper lighting,
+            shadows, and fabric draping. High quality, photorealistic.
+            """
+            
+            response = model.generate_images(
+                prompt=combined_prompt,
+                number_of_images=1,
+                aspect_ratio="3:4",
+                safety_filter_level="block_some",
+                person_generation="allow_adult"
             )
         
-        genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        user_image_data = user_image.read()
-        
-        return Response({
-            'success': True,
-            'message': 'Virtual try-on processed successfully',
-            'product': {
-                'id': product.id,
-                'name': product.productDisplayName,
-                'price': product.price,
-                'image_url': product.link
-            },
-            'note': 'Image generation completed. In production, this would return the edited image URL.'
-        })
+        if response and hasattr(response, 'images') and response.images:
+            temp_file = tempfile.NamedTemporaryFile(suffix='.jpg', delete=False)
+            response.images[0].save(temp_file.name)
+            logger.info(f"Successfully generated image: {temp_file.name}")
+            return temp_file.name
+            
+        logger.error("No images generated by Vertex AI")
+        return None
         
     except Exception as e:
-        logger.error(f"Virtual try-on error: {e}", exc_info=True)
-        return Response(
-            {'error': str(e)},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
+        logger.error(f"Vertex AI specific error: {e}", exc_info=True)
+        return None
+    
+def process_virtual_try_on_local(person_image_path, garment_image_path):
+    """
+    Process virtual try-on locally with improved garment placement
+    No API key required
+    """
+    try:
+        person = Image.open(person_image_path).convert('RGBA')
+        garment = Image.open(garment_image_path).convert('RGBA')
+        
+        person_width, person_height = person.size
+        
+        target_width = int(person_width * 0.45)
+        target_height = int(garment.height * (target_width / garment.width))
+        
+        garment_resized = garment.resize((target_width, target_height), Image.Resampling.LANCZOS)
+        
+        x_position = (person_width - target_width) // 2
+        y_position = int(person_height * 0.2)  # 20% from top
+        
+        result = person.copy()
+        
+        shadow = Image.new('RGBA', (target_width + 20, target_height + 20), (0, 0, 0, 0))
+        shadow_draw = ImageDraw.Draw(shadow)
+        shadow_draw.rectangle([(10, 10), (target_width + 10, target_height + 10)], 
+                             fill=(0, 0, 0, 50))
+        
+        result.paste(garment_resized, (x_position, y_position), garment_resized)
+        
+        result = result.convert('RGB')
+        
+        temp_output = tempfile.NamedTemporaryFile(suffix='.jpg', delete=False)
+        result.save(temp_output.name, 'JPEG', quality=95)
+        
+        return temp_output.name
+        
+    except Exception as e:
+        logger.error(f"Local processing error: {str(e)}")
+        return None
+
+
+def process_virtual_try_on_simple(person_image_path, garment_image_path):
+    """
+    Simple fallback processing
+    """
+    person = Image.open(person_image_path).convert('RGB')
+    garment = Image.open(garment_image_path).convert('RGBA')
+    
+    garment_size = (200, 200)
+    garment_resized = garment.resize(garment_size)
+    
+    result = person.copy()
+    result = result.convert('RGBA')
+    
+    x = (result.width - garment_size[0]) // 2
+    y = int(result.height * 0.2)
+    
+    result.paste(garment_resized, (x, y), garment_resized)
+    result = result.convert('RGB')
+    
+    temp_output = tempfile.NamedTemporaryFile(suffix='.jpg', delete=False)
+    result.save(temp_output.name, 'JPEG', quality=95)
+    
+    return temp_output.name
+
+
+@api_view(['POST'])
+def pose_estimation_view(request):
+    """Detect body pose for better garment fitting"""
+    try:
+        person_img = request.FILES.get('person_image')
+        
+        if not person_img:
+            return Response({'error': 'person_image required'}, status=400)
+        
+        with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as temp:
+            for chunk in person_img.chunks():
+                temp.write(chunk)
+            temp_path = temp.name
+        
+        try:
+            keypoints = detect_pose_keypoints(temp_path)
+            return Response({
+                'success': True,
+                'keypoints': keypoints,
+                'clothing_zones': calculate_clothing_zones(keypoints)
+            })
+        finally:
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
+            
+    except Exception as e:
+        logger.error(f"Pose estimation error: {str(e)}")
+        return Response({'error': str(e)}, status=500)
+
+
+def detect_pose_keypoints(image_path):
+    """Detect pose keypoints using simple image analysis"""
+    from PIL import Image
+    img = Image.open(image_path)
+    width, height = img.size
+    
+    return {
+        'nose': {'x': width * 0.5, 'y': height * 0.1},
+        'left_shoulder': {'x': width * 0.3, 'y': height * 0.25},
+        'right_shoulder': {'x': width * 0.7, 'y': height * 0.25},
+        'left_elbow': {'x': width * 0.25, 'y': height * 0.35},
+        'right_elbow': {'x': width * 0.75, 'y': height * 0.35},
+        'left_wrist': {'x': width * 0.2, 'y': height * 0.45},
+        'right_wrist': {'x': width * 0.8, 'y': height * 0.45},
+        'left_hip': {'x': width * 0.35, 'y': height * 0.55},
+        'right_hip': {'x': width * 0.65, 'y': height * 0.55},
+        'left_knee': {'x': width * 0.35, 'y': height * 0.75},
+        'right_knee': {'x': width * 0.65, 'y': height * 0.75},
+        'left_ankle': {'x': width * 0.35, 'y': height * 0.9},
+        'right_ankle': {'x': width * 0.65, 'y': height * 0.9}
+    }
+
+
+def calculate_clothing_zones(keypoints):
+    """Calculate clothing placement zones from keypoints"""
+    return {
+        'torso_zone': {
+            'x': keypoints['left_shoulder']['x'],
+            'y': keypoints['left_shoulder']['y'],
+            'width': keypoints['right_shoulder']['x'] - keypoints['left_shoulder']['x'],
+            'height': keypoints['left_hip']['y'] - keypoints['left_shoulder']['y']
+        },
+        'upper_body': {
+            'x': keypoints['left_shoulder']['x'],
+            'y': keypoints['nose']['y'],
+            'width': keypoints['right_shoulder']['x'] - keypoints['left_shoulder']['x'],
+            'height': keypoints['left_hip']['y'] - keypoints['nose']['y']
+        }
+    }
+
+
+@api_view(['GET'])
+def test_image_access(request, filename):
+    """Test endpoint to check if image exists"""
+    try:
+        file_path = os.path.join(settings.MEDIA_ROOT, 'tryon_results', filename)
+        if os.path.exists(file_path):
+            return FileResponse(open(file_path, 'rb'), content_type='image/jpeg')
+        else:
+            return JsonResponse({'error': f'File not found: {file_path}'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

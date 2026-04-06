@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import axios from "axios";
 import styles from "./QuestionaryModule.module.scss";
+import { Typography } from "ui/Typography/Typography";
+import { Button } from "../../ui/Buttons/Button";
 
 const QuestionaryModule = ({ onComplete }) => {
     const [step, setStep] = useState(0);
@@ -45,9 +47,7 @@ const QuestionaryModule = ({ onComplete }) => {
                 "Жашыл",
                 "Сары",
                 "Кызгылт",
-                "Сыя",
                 "Күрөң",
-                "Боз",
             ],
         },
         {
@@ -126,7 +126,9 @@ const QuestionaryModule = ({ onComplete }) => {
     return (
         <div className={styles.questionnaire}>
             <div className={styles.header}>
-                <h2>Find Your Perfect Style</h2>
+                <Typography variant="h2">
+                    Өзүңүздүн идеалдуу стилиңизди табыңыз
+                </Typography>
                 <div className={styles.progressBar}>
                     <div
                         className={styles.progressFill}
@@ -136,12 +138,12 @@ const QuestionaryModule = ({ onComplete }) => {
                     ></div>
                 </div>
                 <span className={styles.stepCounter}>
-                    Question {step + 1} of {questions.length}
+                    {questions.length} суроонун {step + 1} - суроосу
                 </span>
             </div>
 
             <div className={styles.questionContainer}>
-                <h3>{currentQuestion.question}</h3>
+                <Typography variant="h3">{currentQuestion.question}</Typography>
 
                 <div className={styles.optionsContainer}>
                     {currentQuestion.options.map((option, index) => {
@@ -153,9 +155,10 @@ const QuestionaryModule = ({ onComplete }) => {
                                 : answers[currentQuestion.id] === option;
 
                         return (
-                            <button
+                            <Button
                                 key={index}
                                 className={`${styles.optionButton} ${isSelected ? styles.selected : ""}`}
+                                variant="secondary"
                                 onClick={() =>
                                     handleAnswer(currentQuestion.id, option)
                                 }
@@ -167,7 +170,7 @@ const QuestionaryModule = ({ onComplete }) => {
                                             ✓
                                         </span>
                                     )}
-                            </button>
+                            </Button>
                         );
                     })}
                 </div>
@@ -175,22 +178,24 @@ const QuestionaryModule = ({ onComplete }) => {
 
             <div className={styles.navigationButtons}>
                 {step > 0 && (
-                    <button
+                    <Button
                         className={`${styles.navButton} ${styles.prev}`}
+                        variant="primary"
                         onClick={handlePrev}
                     >
-                        Previous
-                    </button>
+                        Мурунку
+                    </Button>
                 )}
-                <button
+                <Button
                     className={`${styles.navButton} ${styles.next}`}
+                    variant="secondary"
                     onClick={handleNext}
                     disabled={!isAnswered}
                 >
                     {step === questions.length - 1
-                        ? "Get Recommendations"
-                        : "Next"}
-                </button>
+                        ? "Сунуштарды алыңыз"
+                        : "Кийинки"}
+                </Button>
             </div>
         </div>
     );

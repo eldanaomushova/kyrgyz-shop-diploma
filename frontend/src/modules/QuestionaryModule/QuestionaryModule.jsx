@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import styles from "./QuestionaryModule.module.scss";
-import { Typography } from "ui/Typography/Typography";
+import { Typography } from "../../ui/Typography/Typography";
 import { Button } from "../../ui/Buttons/Button";
 
 const QuestionaryModule = ({ onComplete }) => {

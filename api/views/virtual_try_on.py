@@ -153,6 +153,7 @@ def process_virtual_try_on_vertex(person_path, garment_path):
             "parameters": {
                 "sampleCount": 1,
                 "baseSteps": 32,
+                "person_generation": "ALLOW_ALL", 
                 "outputOptions": {
                     "mimeType": "image/jpeg"
                 }

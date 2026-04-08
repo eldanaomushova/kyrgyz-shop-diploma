@@ -3,7 +3,7 @@ import { Typography } from "../../../ui/Typography/Typography";
 import { Button } from "../../../ui/Buttons/Button";
 import { useNavigate } from "react-router-dom";
 import { PATH } from "../../../utils/Constants/Constants";
-import { Footer } from "modules/Footer/components/Footer";
+import { Footer } from "../../../modules/Footer/components/Footer";
 import heroVideo from "../../../assets/Videos/video.mp4";
 
 export const MainBlock = () => {

@@ -31,6 +31,7 @@ local_settings.py
 db.sqlite3
 db.sqlite3-journal
 
+
 # IDE
 .vscode/
 .idea/
@@ -49,3 +50,7 @@ yarn-error.log*
 
 # Stripe keys (extra protection)
 stripe_*_key
+
+
+google_key.json
+media/

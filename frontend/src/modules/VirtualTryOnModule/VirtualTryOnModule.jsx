@@ -4,6 +4,9 @@ import QuestionaryModule from "../../modules/QuestionaryModule/QuestionaryModule
 import styles from "./VirtualTryOnModule.module.scss";
 import { Typography } from "../../ui/Typography/Typography";
 import { Button } from "../../ui/Buttons/Button";
+import { useParams } from "react-router-dom";
+import { useCart } from "../../modules/CartProvider/CartProvider";
+import Swal from "sweetalert2";
 
 const VirtualTryOnModule = () => {
     const [stage, setStage] = useState("questionnaire");
@@ -14,6 +17,9 @@ const VirtualTryOnModule = () => {
     const [loading, setLoading] = useState(false);
     const [generatedImageUrl, setGeneratedImageUrl] = useState(null);
     const fileInputRef = useRef(null);
+    const { id } = useParams();
+    const { addToCart } = useCart();
+    console.log("Product ID from params:", id);
 
     const getCookie = (name) => {
         let cookieValue = null;
@@ -42,7 +48,7 @@ const VirtualTryOnModule = () => {
         setStage("try-on");
         setTryOnResult(null);
         setGeneratedImageUrl(null);
-        setUserImage(null); // Reset user image when new product selected
+        setUserImage(null);
     };
 
     const handleImageUpload = (event) => {
@@ -51,6 +57,25 @@ const VirtualTryOnModule = () => {
             setUserImage(file);
             setTryOnResult(null);
             setGeneratedImageUrl(null);
+        }
+    };
+    const handleAddToCart = () => {
+        if (selectedProduct) {
+            addToCart(selectedProduct);
+            Swal.fire({
+                title: "Кошулду!",
+                text: `${selectedProduct.productDisplayName} себетке ийгиликтүү кошулду.`,
+                icon: "success",
+                toast: true,
+                position: "top-end",
+                showConfirmButton: false,
+                timer: 2000,
+                timerProgressBar: true,
+                background: "#fff",
+                color: "#333",
+            });
+        } else {
+            console.error("No product selected to add to cart");
         }
     };
 
@@ -146,6 +171,7 @@ const VirtualTryOnModule = () => {
                             <div
                                 key={product.id}
                                 className={styles.productCard}
+                                onClick={() => handleProductSelect(product)}
                             >
                                 <img
                                     src={product.link}
@@ -196,6 +222,15 @@ const VirtualTryOnModule = () => {
                     >
                         Виртуалдык сынап көрүү
                     </Typography>
+
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleImageUpload}
+                        accept="image/*"
+                        style={{ display: "none" }}
+                    />
+
                     <button
                         className={styles.backButton}
                         onClick={() => setStage("recommendations")}
@@ -206,16 +241,18 @@ const VirtualTryOnModule = () => {
                     <div className={styles.tryOnContainer}>
                         <div className={styles.selectedProduct}>
                             <Typography variant="h3">Тандалган буюм</Typography>
-                            <img
-                                src={selectedProduct.link}
-                                alt={selectedProduct.productDisplayName}
-                                className={styles.selectedProductImage}
-                            />
+                            <div className={styles.selectedProductImageWrapper}>
+                                <img
+                                    src={selectedProduct.link}
+                                    className={styles.selectedProductImage}
+                                    alt="Product"
+                                />
+                            </div>
                             <div className={styles.productDetails}>
-                                <Typography variant="h4">
+                                <Typography variant="h3">
                                     {selectedProduct.productDisplayName}
                                 </Typography>
-                                <Typography variant="h5">
+                                <Typography variant="h4">
                                     ${selectedProduct.price}
                                 </Typography>
                             </div>
@@ -223,119 +260,88 @@ const VirtualTryOnModule = () => {
 
                         <div className={styles.uploadSection}>
                             <Typography variant="h3">
-                                Сүрөтүңүздү жүктөңүз
+                                Сиздин сүрөтүңүз
                             </Typography>
-                            <Typography variant="body2">
-                                Эң жакшы натыйжа алуу үчүн толук дене сүрөтүн
-                                жүктөңүз
-                            </Typography>
-
-                            <input
-                                type="file"
-                                ref={fileInputRef}
-                                onChange={handleImageUpload}
-                                accept="image/*"
-                                style={{ display: "none" }}
-                            />
-
-                            {!userImage ? (
-                                <button
-                                    className={styles.uploadButton}
-                                    onClick={() => fileInputRef.current.click()}
-                                >
-                                    Менин сүрөтүмдү жүктөө
-                                </button>
-                            ) : (
-                                <div className={styles.imagePreview}>
+                            <div className={styles.imagePreview}>
+                                {userImage ? (
                                     <img
                                         src={URL.createObjectURL(userImage)}
-                                        alt="Your photo"
-                                        className={styles.previewImage}
+                                        alt="Preview"
                                     />
-                                    <button
-                                        className={styles.changePhotoButton}
+                                ) : (
+                                    <div
+                                        style={{
+                                            color: "#999",
+                                            cursor: "pointer",
+                                        }}
                                         onClick={() =>
                                             fileInputRef.current.click()
                                         }
                                     >
-                                        Сүрөттү өзгөртүү
-                                    </button>
-                                </div>
-                            )}
-
-                            <button
-                                className={styles.tryOnActionButton}
-                                onClick={handleTryOn}
-                                disabled={!userImage || loading}
-                            >
-                                {loading
-                                    ? "Иштетүүдө..."
-                                    : "Кийимди сынап көрүү"}
-                            </button>
+                                        Сүрөт тандоо үчүн басыңыз
+                                    </div>
+                                )}
+                            </div>
+                            <div className={styles.resultActions}>
+                                <button
+                                    className={styles.changeButton}
+                                    onClick={() => fileInputRef.current.click()}
+                                >
+                                    {userImage
+                                        ? "Сүрөттү өзгөртүү"
+                                        : "Сүрөт жүктөө"}
+                                </button>
+                                <button
+                                    className={styles.tryOnActionButton}
+                                    onClick={handleTryOn}
+                                    disabled={!userImage || loading}
+                                >
+                                    Виртуалдык сынап көрүү
+                                </button>
+                            </div>
                         </div>
-                    </div>
 
-                    {(tryOnResult || generatedImageUrl) && (
+                        {/* 3. Result Section */}
                         <div className={styles.resultSection}>
                             <Typography variant="h3">
                                 Виртуалдык сынап көрүү натыйжаңыз
                             </Typography>
-
+                            <div className={styles.generatedImageContainer}>
+                                {loading && (
+                                    <div className={styles.aiOverlay}>
+                                        <div className={styles.shimmer}></div>
+                                        <div className={styles.statusText}>
+                                            AI иштеп жатат...
+                                        </div>
+                                    </div>
+                                )}
+                                {generatedImageUrl && !loading && (
+                                    <img src={generatedImageUrl} alt="Result" />
+                                )}
+                                {!generatedImageUrl && !loading && (
+                                    <div style={{ color: "#999" }}>
+                                        Натыйжа бул жерде болот
+                                    </div>
+                                )}
+                            </div>
                             {generatedImageUrl && (
-                                <div className={styles.generatedImageContainer}>
-                                    <img
-                                        src={generatedImageUrl}
-                                        alt="Virtual try-on result"
-                                        className={styles.generatedImage}
-                                        onError={(e) => {
-                                            console.error(
-                                                "Image failed to load:",
-                                                generatedImageUrl
-                                            );
-                                            e.target.src =
-                                                "https://via.placeholder.com/800x1000/ff0000/ffffff?text=Image+Load+Error";
-                                        }}
-                                    />
-                                </div>
-                            )}
-
-                            <div className={styles.resultCard}>
-                                {tryOnResult?.message && (
-                                    <Typography variant="body1">
-                                        {tryOnResult.message}
-                                    </Typography>
-                                )}
-                                {tryOnResult?.note && (
-                                    <Typography
-                                        variant="body2"
-                                        className={styles.note}
-                                    >
-                                        {tryOnResult.note}
-                                    </Typography>
-                                )}
                                 <div className={styles.resultActions}>
-                                    <Button
+                                    <button
                                         className={styles.addToCartButton}
-                                        variant="secondary"
-                                        onClick={() => {
-                                            alert(
-                                                `Себетке кошулду: ${selectedProduct.productDisplayName} - $${selectedProduct.price}`
-                                            );
-                                        }}
+                                        onClick={handleAddToCart}
                                     >
-                                        Себетке кошуу - ${selectedProduct.price}
-                                    </Button>
-                                    <Button
-                                        variant="secondary"
+                                        Себетке кошуу
+                                    </button>
+                                    <button
                                         className={styles.tryAnotherButton}
                                         onClick={resetProcess}
                                     >
-                                        Башка буюмду сынап көрүү
-                                    </Button>
+                                        Башкасын көрүү
+                                    </button>
                                 </div>
-                            </div>
+                            )}
                         </div>
-                    )}
+                    </div>
                 </div>
             </div>
         );

@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, useLocation } from "react-router-dom";
 import { PATH } from "../../utils/Constants/Constants";
 import { HomePage } from "../../pages/HomePage/HomePage";
 import { Layout } from "../../app/Layout/Layout";
@@ -8,6 +8,12 @@ import { CartPage } from "../../pages/CartPage/CartPage";
 import { SigninPage } from "../../pages/AuthPage/SigninPage";
 import { SignupPage } from "../../pages/AuthPage/SignupPage";
 import VirtualTryOnPage from "../../pages/VirtualTryOnPage/VirtualTryOnPage";
+import ArTryOnPage from "../../pages/ArTryOnPage/ArTryOnPage";
+
+const ArTryOnPageWrapper = () => {
+    const { state } = useLocation();
+    return <ArTryOnPage productImageUrl={state?.productImageUrl} />;
+};
 
 export const AppRouter = createBrowserRouter([
     {
@@ -41,6 +47,10 @@ export const AppRouter = createBrowserRouter([
             {
                 path: PATH.virtualTryOn,
                 element: <VirtualTryOnPage />,
+            },
+            {
+                path: PATH.arTryOn,
+                element: <ArTryOnPageWrapper />,
             },
         ],
     },

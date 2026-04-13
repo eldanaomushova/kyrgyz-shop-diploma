@@ -10,7 +10,6 @@ import shutil
 from django.http import JsonResponse, FileResponse
 import vertexai
 from google.cloud import aiplatform
-# from vertexai.preview.vision_models import Image as VertexImage
 import requests
 import base64
 from google.oauth2 import service_account

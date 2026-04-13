@@ -89,7 +89,9 @@ export const Header = () => {
                                     </li>
                                     <li>
                                         <button
-                                            onClick={() => navigate(PATH.virtualTryOn)}
+                                            onClick={() =>
+                                                navigate(PATH.virtualTryOn)
+                                            }
                                             className={styles.navBtn}
                                         >
                                             Virtual Try-On

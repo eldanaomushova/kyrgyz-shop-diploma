@@ -1,4 +1,3 @@
-// 1. Layout & Page
 .virtualTryOnPage {
     min-height: 100vh;
     padding: 40px 0;
@@ -313,5 +312,78 @@
 
     &:hover {
         background: var(--button-hover);
+    }
+}
+.arLiveButton {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 28px;
+    background: linear-gradient(135deg, #6c3aff, #a855f7);
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    overflow: visible;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+    box-shadow: 0 4px 20px rgba(108, 58, 255, 0.4);
+
+    &:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 28px rgba(108, 58, 255, 0.55);
+    }
+
+    &:active:not(:disabled) {
+        transform: translateY(0);
+    }
+
+    &:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+    }
+}
+
+.arPulse {
+    position: absolute;
+    inset: -4px;
+    border-radius: 50px;
+    border: 2px solid rgba(168, 85, 247, 0.6);
+    animation: arRing 1.8s ease-out infinite;
+    pointer-events: none;
+}
+
+@keyframes arRing {
+    0% {
+        transform: scale(1);
+        opacity: 0.7;
+    }
+    70% {
+        transform: scale(1.12);
+        opacity: 0;
+    }
+    100% {
+        transform: scale(1.12);
+        opacity: 0;
+    }
+}
+
+.arIcon {
+    display: flex;
+    align-items: center;
+    animation: arBounce 2.4s ease-in-out infinite;
+}
+
+@keyframes arBounce {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-3px);
     }
 }

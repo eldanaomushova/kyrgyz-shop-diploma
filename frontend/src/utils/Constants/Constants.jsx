@@ -11,6 +11,7 @@ export const PATH = {
     signin: "/signin",
     signup: "/signup",
     virtualTryOn: "/virtual-try-on",
+    arTryOn: "/ar-tryon/:id",
 };
 
 export const NavLinks = [];

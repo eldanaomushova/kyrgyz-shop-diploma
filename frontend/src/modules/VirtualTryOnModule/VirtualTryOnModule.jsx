@@ -4,22 +4,32 @@ import QuestionaryModule from "../../modules/QuestionaryModule/QuestionaryModule
 import styles from "./VirtualTryOnModule.module.scss";
 import { Typography } from "../../ui/Typography/Typography";
 import { Button } from "../../ui/Buttons/Button";
-import { useParams } from "react-router-dom";
 import { useCart } from "../../modules/CartProvider/CartProvider";
 import Swal from "sweetalert2";
+import { useNavigate } from "react-router-dom";
+
+const getProductImageUrl = (product) => {
+    if (!product) return null;
+    if (product.link && product.link.startsWith("http://")) {
+        return product.link.replace("http://", "https://");
+    }
+    if (product.link) return product.link;
+    if (product.filename) {
+        return `http://127.0.0.1:8000/media/products/${product.filename}`;
+    }
+    return null;
+};
 
 const VirtualTryOnModule = () => {
     const [stage, setStage] = useState("questionnaire");
     const [recommendations, setRecommendations] = useState([]);
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [userImage, setUserImage] = useState(null);
-    const [tryOnResult, setTryOnResult] = useState(null);
     const [loading, setLoading] = useState(false);
     const [generatedImageUrl, setGeneratedImageUrl] = useState(null);
     const fileInputRef = useRef(null);
-    const { id } = useParams();
     const { addToCart } = useCart();
-    console.log("Product ID from params:", id);
+    const navigate = useNavigate();
 
     const getCookie = (name) => {
         let cookieValue = null;
@@ -46,7 +56,6 @@ const VirtualTryOnModule = () => {
     const handleProductSelect = (product) => {
         setSelectedProduct(product);
         setStage("try-on");
-        setTryOnResult(null);
         setGeneratedImageUrl(null);
         setUserImage(null);
     };
@@ -55,7 +64,6 @@ const VirtualTryOnModule = () => {
         const file = event.target.files[0];
         if (file) {
             setUserImage(file);
-            setTryOnResult(null);
             setGeneratedImageUrl(null);
         }
     };
@@ -87,9 +95,10 @@ const VirtualTryOnModule = () => {
             const formData = new FormData();
             formData.append("person_image", userImage);
 
-            if (selectedProduct.link) {
-                const productImageBlob = await fetch(selectedProduct.link).then(
-                    (res) => res.blob()
+            const imageUrl = getProductImageUrl(selectedProduct);
+            if (imageUrl) {
+                const productImageBlob = await fetch(imageUrl).then((res) =>
+                    res.blob()
                 );
                 formData.append(
                     "garment_image",
@@ -108,8 +117,6 @@ const VirtualTryOnModule = () => {
                     },
                 }
             );
-
-            setTryOnResult(response.data);
 
             if (response.data.result_url) {
                 setGeneratedImageUrl(response.data.result_url);
@@ -131,7 +138,6 @@ const VirtualTryOnModule = () => {
         setRecommendations([]);
         setSelectedProduct(null);
         setUserImage(null);
-        setTryOnResult(null);
         setGeneratedImageUrl(null);
     };
 
@@ -174,7 +180,7 @@ const VirtualTryOnModule = () => {
                                 onClick={() => handleProductSelect(product)}
                             >
                                 <img
-                                    src={product.link}
+                                    src={getProductImageUrl(product)}
                                     alt={product.productDisplayName}
                                     className={styles.productImage}
                                 />
@@ -243,7 +249,7 @@ const VirtualTryOnModule = () => {
                             <Typography variant="h3">Тандалган буюм</Typography>
                             <div className={styles.selectedProductImageWrapper}>
                                 <img
-                                    src={selectedProduct.link}
+                                    src={getProductImageUrl(selectedProduct)}
                                     className={styles.selectedProductImage}
                                     alt="Product"
                                 />
@@ -298,10 +304,48 @@ const VirtualTryOnModule = () => {
                                 >
                                     Виртуалдык сынап көрүү
                                 </button>
+                                <button
+                                    className={styles.arLiveButton}
+                                    onClick={() =>
+                                        navigate(
+                                            `/ar-tryon/${selectedProduct.id}`,
+                                            {
+                                                state: {
+                                                    productImageUrl:
+                                                        getProductImageUrl(
+                                                            selectedProduct
+                                                        ),
+                                                },
+                                            }
+                                        )
+                                    }
+                                    disabled={!selectedProduct}
+                                >
+                                    <span className={styles.arPulse} />
+                                    <span className={styles.arIcon}>
+                                        <svg
+                                            width="20"
+                                            height="20"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        >
+                                            <path
+                                                d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8
+                 a2 2 0 0 1 2-2h4l2-3h6l2 3h4
+                 a2 2 0 0 1 2 2z"
+                                            />
+                                            <circle cx="12" cy="13" r="4" />
+                                        </svg>
+                                    </span>
+                                    AR Live Fit
+                                </button>
                             </div>
                         </div>
 
-                        {/* 3. Result Section */}
                         <div className={styles.resultSection}>
                             <Typography variant="h3">
                                 Виртуалдык сынап көрүү натыйжаңыз

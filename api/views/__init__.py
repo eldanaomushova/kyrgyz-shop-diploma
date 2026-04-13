@@ -3,7 +3,7 @@
 Views package for the API
 """
 
-# Virtual Try-On Views (Image to Image)
+
 from .virtual_try_on import image_try_on, pose_estimation_view
 
 # Product Views
@@ -15,6 +15,8 @@ from .product_views import (
     get_available_filters,
     get_product_stats,
 )
+
+from .ar_try_on_views import extract_garment_view
 
 # Cart Views
 from .cart_views import cart_operations, cart_item_detail
@@ -33,6 +35,7 @@ __all__ = [
     # Virtual try-on (image to image)
     'image_try_on',
     'pose_estimation_view',
+    'extract_garment_view',
     
     # Products
     'get_products',

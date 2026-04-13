@@ -1,4 +1,5 @@
-django
+django==6.0.3
+django-extensions
 gunicorn
 psycopg2-binary      
 python-dotenv    

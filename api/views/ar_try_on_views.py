@@ -4,7 +4,6 @@ import base64
 import logging
 import tempfile
 from PIL import Image
-from django.conf import settings
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser

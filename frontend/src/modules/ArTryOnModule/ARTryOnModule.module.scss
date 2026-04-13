@@ -1,0 +1,436 @@
+@mixin kyrgyz-pattern {
+    background-image:
+        repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 20px,
+            rgba(99, 170, 202, 0.05) 20px,
+            rgba(99, 170, 202, 0.05) 40px
+        ),
+        repeating-linear-gradient(
+            -45deg,
+            transparent,
+            transparent 20px,
+            rgba(36, 42, 84, 0.03) 20px,
+            rgba(36, 42, 84, 0.03) 40px
+        );
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 0.8;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes pulse {
+    0%,
+    100% {
+        opacity: 0.5;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -1000px 0;
+    }
+    100% {
+        background-position: 1000px 0;
+    }
+}
+
+.container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, var(--white) 0%, var(--white2) 100%);
+    padding: 24px;
+    position: relative;
+
+    &::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        @include kyrgyz-pattern;
+        pointer-events: none;
+        z-index: 0;
+    }
+}
+
+.loadingOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(36, 42, 84, 0.95);
+    backdrop-filter: blur(10px);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: slideIn 0.3s ease-out;
+}
+
+.loadingContent {
+    text-align: center;
+    position: relative;
+    padding: 48px;
+    background: var(--white);
+    border-radius: 20px;
+    border: 2px solid var(--brand-secondary);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.kyrgyzPattern {
+    position: absolute;
+    top: -20px;
+    left: -20px;
+    right: -20px;
+    bottom: -20px;
+    border: 2px solid var(--logo-color);
+    border-radius: 30px;
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+.loadingTitle {
+    color: var(--brand-primary);
+    margin: 0 0 16px 0;
+    text-transform: uppercase;
+}
+
+.loadingSubtitle {
+    color: var(--text-secondary);
+    opacity: 0.8;
+}
+
+.mainLayout {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    max-width: 1600px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+}
+
+.videoContainer {
+    position: relative;
+    flex: 2;
+    min-width: 320px;
+    animation: slideIn 0.4s ease-out;
+}
+
+.hiddenVideo {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.canvas {
+    width: 100%;
+    height: auto;
+    border-radius: 16px;
+    border-width: 3px;
+    border-style: solid;
+    box-shadow: 0 8px 32px var(--ui-shadow);
+    background: #000;
+    cursor: pointer;
+    display: block;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+
+    &:hover {
+        transform: scale(1.01);
+        box-shadow: 0 12px 48px var(--ui-shadow-hover);
+    }
+}
+
+.flashOverlay {
+    position: absolute;
+    inset: 0;
+    background: white;
+    opacity: 0.8;
+    border-radius: 16px;
+    pointer-events: none;
+    animation: fadeOut 0.3s ease-out;
+}
+
+.statusBadge {
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(5px);
+    padding: 8px 16px;
+    border-radius: 8px;
+    z-index: 10;
+    border-left: 3px solid currentColor;
+}
+
+.screenshotHint {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    padding: 6px 12px;
+    border-radius: 6px;
+    color: var(--text-light);
+    opacity: 0.7;
+    z-index: 10;
+}
+
+.controlsPanel {
+    flex: 1;
+    min-width: 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    animation: slideIn 0.4s ease-out 0.1s both;
+}
+
+.screenshotButton {
+    background: linear-gradient(
+        135deg,
+        var(--brand-primary) 0%,
+        var(--brand-secondary-dark) 100%
+    );
+    color: var(--text-light);
+    padding: 16px 24px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    box-shadow: 0 4px 12px var(--ui-shadow);
+
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(36, 42, 84, 0.4);
+        background: linear-gradient(
+            135deg,
+            var(--button-hover) 0%,
+            var(--brand-primary) 100%
+        );
+    }
+
+    &:active {
+        transform: translateY(0);
+    }
+}
+
+.controlCard {
+    background: var(--white);
+    padding: 20px;
+    border-radius: 16px;
+    border: 1px solid var(--ui-border);
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px var(--ui-shadow);
+
+    &:hover {
+        border-color: var(--brand-secondary);
+        box-shadow: 0 4px 16px var(--ui-shadow);
+        transform: translateY(-2px);
+    }
+}
+
+.cardHeader {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.cardTitle {
+    margin: 0;
+    color: var(--brand-primary);
+}
+
+.sliderContainer {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 16px 0;
+}
+
+.sliderLabel {
+    color: var(--text-secondary);
+    min-width: 45px;
+}
+
+.slider {
+    flex: 1;
+    height: 6px;
+    -webkit-appearance: none;
+    background: linear-gradient(
+        90deg,
+        var(--brand-secondary),
+        var(--brand-primary)
+    );
+    border-radius: 3px;
+    outline: none;
+
+    &::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 18px;
+        height: 18px;
+        background: var(--brand-primary);
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 0 6px rgba(36, 42, 84, 0.8);
+        border: 2px solid var(--white);
+        transition: transform 0.2s ease;
+
+        &:hover {
+            transform: scale(1.2);
+        }
+    }
+
+    &::-moz-range-thumb {
+        width: 18px;
+        height: 18px;
+        background: var(--brand-primary);
+        border-radius: 50%;
+        cursor: pointer;
+        border: 2px solid var(--white);
+    }
+}
+
+.sliderValue {
+    text-align: center;
+    color: var(--brand-primary);
+    margin: 8px 0;
+}
+
+.sliderHint {
+    color: var(--text-muted);
+    text-align: center;
+    margin-top: 8px;
+}
+
+.tipsCard {
+    background: var(--white);
+    padding: 20px;
+    border-radius: 16px;
+    border: 1px solid var(--ui-border);
+    box-shadow: 0 2px 8px var(--ui-shadow);
+    transition: all 0.3s ease;
+
+    &:hover {
+        border-color: var(--brand-secondary);
+        box-shadow: 0 4px 16px var(--ui-shadow);
+    }
+}
+
+.tipsList {
+    margin: 0;
+    padding-left: 20px;
+    color: var(--text-primary);
+    line-height: 1.8;
+    li {
+        margin-bottom: 8px;
+        &::marker {
+            color: var(--brand-secondary);
+        }
+    }
+}
+
+.garmentStatus {
+    background: rgba(99, 170, 202, 0.1);
+    padding: 12px;
+    border-radius: 12px;
+    text-align: center;
+    color: var(--brand-primary);
+    border: 1px solid var(--brand-secondary);
+}
+
+.logsContainer {
+    background: var(--white2);
+    padding: 12px;
+    max-height: 200px;
+    overflow: auto;
+    border-radius: 12px;
+    border: 1px solid var(--ui-border);
+
+    &::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: var(--white3);
+        border-radius: 3px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: var(--brand-secondary);
+        border-radius: 3px;
+    }
+}
+
+.logEntry {
+    margin-bottom: 6px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    word-break: break-word;
+
+    &:last-child {
+        margin-bottom: 0;
+    }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+    .container {
+        padding: 16px;
+    }
+
+    .mainLayout {
+        gap: 16px;
+    }
+
+    .videoContainer {
+        min-width: 280px;
+    }
+
+    .controlsPanel {
+        min-width: 260px;
+    }
+
+    .screenshotButton {
+        padding: 12px 20px;
+    }
+}
+
+@media (max-width: 640px) {
+    .mainLayout {
+        flex-direction: column;
+    }
+
+    .videoContainer {
+        min-width: auto;
+    }
+
+    .controlsPanel {
+        min-width: auto;
+    }
+}

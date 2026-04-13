@@ -1,52 +1,79 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useLocation } from "react-router-dom";
+import styles from "./ARTryOnModule.module.scss";
+import { Typography } from "../../ui/Typography/Typography";
 
-async function extractGarmentWithVertexAI(imageFile, onLog) {
+const extractGarmentWithVertexAI = async (imageFile) => {
     try {
-        onLog("🤖 Sending image to Vertex AI for garment extraction...");
         const formData = new FormData();
         formData.append("product_image", imageFile);
+
         const response = await fetch("/api/virtual-try-on/extract-garment/", {
             method: "POST",
             body: formData,
-            headers: {
-                ...(fetch.defaults?.headers?.common && {
-                    "Content-Type": undefined,
-                }),
-            },
         });
+
         if (!response.ok) {
-            const errorText = await response.text();
-            onLog(`⚠️ Vertex AI error (${response.status}): ${errorText}`);
             return null;
         }
 
         const data = await response.json();
 
         if (data.success && data.image_url) {
-            onLog("✅ Garment extracted by Vertex AI");
-            return data.image_url;
-        } else {
-            onLog(`⚠️ Unexpected response format: ${JSON.stringify(data)}`);
-            return null;
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.crossOrigin = "Anonymous";
+                img.onload = () => {
+                    resolve(img);
+                };
+                img.onerror = () => {
+                    resolve(null);
+                };
+                img.src = data.image_url;
+            });
         }
+        return null;
     } catch (error) {
-        onLog(`⚠️ Vertex AI error: ${error.message}`);
-        console.error("Extraction error:", error);
         return null;
     }
-}
+};
 
-function drawGarmentOnBody(ctx, garmentImg, landmarks, W, H) {
-    if (!garmentImg || !landmarks) return;
+const createMaskedGarment = async (img) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0);
+    const gradient = ctx.createLinearGradient(0, 0, 0, img.height * 0.3);
+    gradient.addColorStop(0, "rgba(0, 0, 0, 0.95)");
+    gradient.addColorStop(0.5, "rgba(0, 0, 0, 0.5)");
+    gradient.addColorStop(1, "rgba(0, 0, 0, 0)");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, img.width, img.height * 0.3);
+    const maskedImg = new Image();
+    maskedImg.src = canvas.toDataURL("image/png");
+    return maskedImg;
+};
+
+const drawGarmentOnBody = (
+    ctx,
+    garmentImg,
+    landmarks,
+    W,
+    H,
+    sizeMultiplier = 2.0,
+    verticalOffset = 0.29
+) => {
+    if (!garmentImg || !landmarks) return false;
 
     const getLandmark = (idx) => {
         const lm = landmarks[idx];
+        if (!lm) return null;
         return {
             x: (1 - lm.x) * W,
             y: lm.y * H,
-            z: lm.z,
-            visibility: lm.visibility || 1,
+            z: lm.z || 0,
+            visibility: lm.visibility || 0,
         };
     };
 
@@ -54,13 +81,14 @@ function drawGarmentOnBody(ctx, garmentImg, landmarks, W, H) {
     const rightShoulder = getLandmark(12);
     const leftHip = getLandmark(23);
     const rightHip = getLandmark(24);
-    const leftElbow = getLandmark(13);
-    const rightElbow = getLandmark(14);
-    const nose = getLandmark(0);
 
-    if (leftShoulder.visibility < 0.5 || rightShoulder.visibility < 0.5) {
-        console.warn("Poor landmark visibility");
-        return;
+    if (
+        !leftShoulder ||
+        !rightShoulder ||
+        leftShoulder.visibility < 0.5 ||
+        rightShoulder.visibility < 0.5
+    ) {
+        return false;
     }
 
     const shoulderCenter = {
@@ -73,90 +101,61 @@ function drawGarmentOnBody(ctx, garmentImg, landmarks, W, H) {
         rightShoulder.y - leftShoulder.y
     );
 
-    const torsoHeight = Math.abs(
-        (leftHip.y + rightHip.y) / 2 - shoulderCenter.y
-    );
+    let torsoHeight = shoulderWidth * 1.3;
+    if (
+        leftHip &&
+        rightHip &&
+        leftHip.visibility > 0.3 &&
+        rightHip.visibility > 0.3
+    ) {
+        const hipCenterY = (leftHip.y + rightHip.y) / 2;
+        torsoHeight = Math.abs(hipCenterY - shoulderCenter.y);
+    }
 
     const shoulderAngle = Math.atan2(
         rightShoulder.y - leftShoulder.y,
         rightShoulder.x - leftShoulder.x
     );
 
-    const shoulderZDiff = Math.abs(leftShoulder.z - rightShoulder.z);
-    const isSideView = shoulderZDiff > 0.05;
-
-    let garmentWidth = shoulderWidth * 1.4;
+    let garmentWidth = shoulderWidth * sizeMultiplier;
     let garmentHeight = garmentWidth * (garmentImg.height / garmentImg.width);
-
-    const desiredHeight = torsoHeight * 0.9;
-    if (garmentHeight > desiredHeight) {
-        const ratio = desiredHeight / garmentHeight;
-        garmentWidth *= ratio;
-        garmentHeight = desiredHeight;
-    }
-
-    const perspectiveScale = isSideView ? 0.85 : 1.0;
-    garmentWidth *= perspectiveScale;
 
     ctx.save();
     ctx.translate(shoulderCenter.x, shoulderCenter.y);
     ctx.rotate(shoulderAngle);
-    const armRaised =
-        leftElbow.y < leftShoulder.y - 50 ||
-        rightElbow.y < rightShoulder.y - 50;
-    if (armRaised) {
-        ctx.transform(1, 0, 0.1, 1, 0, 0);
-    }
-    ctx.globalCompositeOperation = "source-over";
     ctx.globalAlpha = 0.95;
-
-    ctx.shadowColor = "rgba(0, 0, 0, 0.3)";
-    ctx.shadowBlur = 5;
-
     ctx.drawImage(
         garmentImg,
         -garmentWidth / 2,
-        -garmentHeight * 0.1,
+        -garmentHeight * verticalOffset,
         garmentWidth,
         garmentHeight
     );
-
-    ctx.shadowColor = "transparent";
-
     ctx.restore();
-    if (window.DEBUG_MODE) {
-        ctx.save();
-        ctx.strokeStyle = "#00ff88";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(leftShoulder.x, leftShoulder.y);
-        ctx.lineTo(rightShoulder.x, rightShoulder.y);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(leftHip.x, leftHip.y);
-        ctx.lineTo(rightHip.x, rightHip.y);
-        ctx.stroke();
 
-        ctx.restore();
-    }
-}
+    return true;
+};
 
 export default function ARTryOnPage({ productImageUrl: productImageUrlProp }) {
     const location = useLocation();
     const productImageUrl =
         productImageUrlProp || location.state?.productImageUrl || null;
+
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
-    const poseRef = useRef(null);
+    const containerRef = useRef(null);
     const animRef = useRef(null);
-    const frameCountRef = useRef(0);
+    const poseRef = useRef(null);
+    const lastPoseRef = useRef(null);
 
     const [poseOk, setPoseOk] = useState(false);
     const [garmentImage, setGarmentImage] = useState(null);
     const [logs, setLogs] = useState([]);
     const [flash, setFlash] = useState(false);
     const [isExtractingGarment, setIsExtractingGarment] = useState(false);
-    const [detectionQuality, setDetectionQuality] = useState(0);
+    const [cameraActive, setCameraActive] = useState(false);
+    const [garmentSize, setGarmentSize] = useState(2.5);
+    const [verticalPosition, setVerticalPosition] = useState(0.12);
 
     const log = useCallback((msg) => {
         console.log(msg);
@@ -164,29 +163,53 @@ export default function ARTryOnPage({ productImageUrl: productImageUrlProp }) {
     }, []);
 
     useEffect(() => {
-        if (!productImageUrl) return;
+        if (!productImageUrl) {
+            log("⚠️ Продукт сүрөтү жок");
+            return;
+        }
 
         setIsExtractingGarment(true);
-        fetch(productImageUrl)
-            .then((res) => res.blob())
-            .then(async (blob) => {
-                const extracted = await extractGarmentWithVertexAI(blob, log);
-                if (extracted) {
-                    const img = new Image();
-                    img.onload = () => {
-                        setGarmentImage(img);
-                        setIsExtractingGarment(false);
-                        log("✅ Using Vertex AI extracted garment");
-                    };
-                    img.onerror = () => {
-                        log("⚠️ Failed to load extracted garment image");
-                        setIsExtractingGarment(false);
-                    };
-                    img.src = extracted;
-                } else {
+        const loadFallback = () => {
+            log("📦 Кийим сүрөтү түздөн-түз жүктөлүүдө...");
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+            img.onload = () => {
+                log(`✅ Кийим жүктөлдү: ${img.width}x${img.height}`);
+                createMaskedGarment(img).then((maskedImg) => {
+                    setGarmentImage(maskedImg);
                     setIsExtractingGarment(false);
-                    log("⚠️ Garment extraction returned nothing");
+                    log("✅ Кийим кийип көрүүгө даяр");
+                });
+            };
+            img.onerror = (err) => {
+                log(`⚠️ Кийим жүктөлбөй калды: ${err}`);
+                setIsExtractingGarment(false);
+            };
+            img.src = productImageUrl;
+        };
+
+        fetch(productImageUrl)
+            .then((res) => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return res.blob();
+            })
+            .then(async (blob) => {
+                log("🔍 Vertex AIге жиберилүүдө...");
+                const extracted = await extractGarmentWithVertexAI(blob);
+                if (extracted) {
+                    log("✅ Vertex AI кийимди ийгиликтүү алып чыкты");
+                    setGarmentImage(extracted);
+                    setIsExtractingGarment(false);
+                } else {
+                    log(
+                        "⚠️ Vertex AI иштебей калды, резервдик вариант колдонулууда"
+                    );
+                    loadFallback();
                 }
+            })
+            .catch((err) => {
+                log(`⚠️ Ката: ${err.message}, резервдик вариант колдонулууда`);
+                loadFallback();
             });
     }, [productImageUrl, log]);
 
@@ -196,79 +219,7 @@ export default function ARTryOnPage({ productImageUrl: productImageUrlProp }) {
 
         const init = async () => {
             try {
-                const pose = new window.Pose({
-                    locateFile: (file) =>
-                        `https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/${file}`,
-                });
-
-                pose.setOptions({
-                    modelComplexity: 1,
-                    smoothLandmarks: true,
-                    enableSegmentation: false,
-                    smoothSegmentation: false,
-                    minDetectionConfidence: 0.3,
-                    minTrackingConfidence: 0.3,
-                });
-
-                pose.onResults((results) => {
-                    if (destroyed) return;
-
-                    const canvas = canvasRef.current;
-                    const video = videoRef.current;
-                    if (!canvas || !video || !video.videoWidth) return;
-
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-
-                    const ctx = canvas.getContext("2d");
-
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    ctx.drawImage(
-                        results.image,
-                        0,
-                        0,
-                        canvas.width,
-                        canvas.height
-                    );
-
-                    if (results.poseLandmarks && garmentImage) {
-                        const shoulders = [
-                            results.poseLandmarks[11],
-                            results.poseLandmarks[12],
-                        ];
-                        const avgVisibility =
-                            (shoulders[0].visibility +
-                                shoulders[1].visibility) /
-                            2;
-
-                        setDetectionQuality(avgVisibility);
-                        setPoseOk(avgVisibility > 0.6);
-
-                        drawGarmentOnBody(
-                            ctx,
-                            garmentImage,
-                            results.poseLandmarks,
-                            canvas.width,
-                            canvas.height
-                        );
-                    } else {
-                        setPoseOk(false);
-                        setDetectionQuality(0);
-
-                        ctx.fillStyle = "rgba(0,0,0,0.7)";
-                        ctx.fillRect(0, 0, canvas.width, canvas.height);
-                        ctx.fillStyle = "#00ff88";
-                        ctx.font = "20px monospace";
-                        ctx.textAlign = "center";
-                        ctx.fillText(
-                            "Position your full body in frame",
-                            canvas.width / 2,
-                            canvas.height / 2
-                        );
-                    }
-                });
-
-                poseRef.current = pose;
+                log("🎥 Камерага уруксат суралууда...");
 
                 stream = await navigator.mediaDevices.getUserMedia({
                     video: {
@@ -278,29 +229,141 @@ export default function ARTryOnPage({ productImageUrl: productImageUrlProp }) {
                     },
                 });
 
-                videoRef.current.srcObject = stream;
-                await videoRef.current.play();
+                log("✅ Камерага уруксат берилди");
 
-                log("✅ Camera started successfully");
+                if (videoRef.current) {
+                    videoRef.current.srcObject = stream;
+                    videoRef.current.onloadedmetadata = () => {
+                        videoRef.current.play();
+                        setCameraActive(true);
+                    };
+                }
 
-                const process = async () => {
+                log("📥 MediaPipe Pose жүктөлүүдө...");
+                if (!window.Pose) {
+                    await new Promise((resolve, reject) => {
+                        const script = document.createElement("script");
+                        script.src =
+                            "https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js";
+                        script.crossOrigin = "anonymous";
+                        script.onload = resolve;
+                        script.onerror = reject;
+                        document.head.appendChild(script);
+                    });
+                }
+                log("✅ MediaPipe жүктөлдү");
+
+                const pose = new window.Pose({
+                    locateFile: (file) =>
+                        `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
+                });
+
+                pose.setOptions({
+                    modelComplexity: 1,
+                    smoothLandmarks: true,
+                    enableSegmentation: false,
+                    minDetectionConfidence: 0.5,
+                    minTrackingConfidence: 0.5,
+                });
+
+                pose.onResults((results) => {
+                    if (!destroyed) {
+                        lastPoseRef.current = results;
+                    }
+                });
+
+                await pose.initialize();
+                poseRef.current = pose;
+
+                const drawLoop = () => {
                     if (destroyed) return;
 
-                    frameCountRef.current++;
-                    if (
-                        frameCountRef.current % 2 === 0 &&
-                        videoRef.current?.readyState >= 2
-                    ) {
-                        await pose.send({ image: videoRef.current });
+                    const canvas = canvasRef.current;
+                    const video = videoRef.current;
+                    const poseResults = lastPoseRef.current;
+
+                    if (canvas && video && video.videoWidth > 0) {
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+
+                        const ctx = canvas.getContext("2d");
+
+                        ctx.save();
+                        ctx.scale(-1, 1);
+                        ctx.drawImage(
+                            video,
+                            -canvas.width,
+                            0,
+                            canvas.width,
+                            canvas.height
+                        );
+                        ctx.restore();
+
+                        if (
+                            poseResults &&
+                            poseResults.poseLandmarks &&
+                            garmentImage
+                        ) {
+                            const drawn = drawGarmentOnBody(
+                                ctx,
+                                garmentImage,
+                                poseResults.poseLandmarks,
+                                canvas.width,
+                                canvas.height,
+                                garmentSize,
+                                verticalPosition
+                            );
+                            setPoseOk(drawn);
+                        } else if (garmentImage) {
+                            setPoseOk(false);
+                            ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+                            ctx.fillRect(0, 0, canvas.width, canvas.height);
+                            ctx.fillStyle = "#63aaca";
+                            ctx.font =
+                                "20px 'Golos Text', 'Montserrat', monospace";
+                            ctx.textAlign = "center";
+                            ctx.fillText(
+                                "🎯 Денеңизди кадрга коюңуз",
+                                canvas.width / 2,
+                                canvas.height / 2
+                            );
+                            ctx.font =
+                                "14px 'Golos Text', 'Montserrat', monospace";
+                            ctx.fillStyle = "#aaa";
+                            ctx.fillText(
+                                "Ийиндериңиз көрүнүп турганын текшериңиз",
+                                canvas.width / 2,
+                                canvas.height / 2 + 40
+                            );
+                        }
                     }
 
-                    animRef.current = requestAnimationFrame(process);
+                    animRef.current = requestAnimationFrame(drawLoop);
                 };
 
-                process();
+                drawLoop();
+
+                const detectLoop = async () => {
+                    if (destroyed) return;
+
+                    if (
+                        videoRef.current &&
+                        videoRef.current.readyState >= 2 &&
+                        poseRef.current
+                    ) {
+                        try {
+                            await poseRef.current.send({
+                                image: videoRef.current,
+                            });
+                        } catch (err) {}
+                    }
+
+                    requestAnimationFrame(detectLoop);
+                };
+
+                detectLoop();
             } catch (error) {
-                log(`⚠️ Camera error: ${error.message}`);
-                console.error("Camera initialization error:", error);
+                console.error("Camera error:", error);
             }
         };
 
@@ -309,15 +372,16 @@ export default function ARTryOnPage({ productImageUrl: productImageUrlProp }) {
         return () => {
             destroyed = true;
             if (animRef.current) cancelAnimationFrame(animRef.current);
-            if (poseRef.current) poseRef.current.close();
-            if (stream) stream.getTracks().forEach((track) => track.stop());
-            if (videoRef.current?.srcObject) {
-                videoRef.current.srcObject
-                    .getTracks()
-                    .forEach((track) => track.stop());
+            if (poseRef.current) {
+                try {
+                    poseRef.current.close();
+                } catch (err) {}
+            }
+            if (stream) {
+                stream.getTracks().forEach((track) => track.stop());
             }
         };
-    }, [garmentImage, log]);
+    }, [garmentImage, garmentSize, verticalPosition, log]);
 
     const takeScreenshot = () => {
         if (!canvasRef.current) return;
@@ -328,189 +392,175 @@ export default function ARTryOnPage({ productImageUrl: productImageUrlProp }) {
         link.download = `virtual-tryon-${Date.now()}.png`;
         link.href = canvasRef.current.toDataURL("image/png");
         link.click();
+        log("📸 Сүрөт сакталды");
+    };
 
-        log("📸 Screenshot saved");
+    const formatSizeValue = (value) => {
+        return value.toFixed(1);
+    };
+
+    const formatVerticalValue = (value) => {
+        return value.toFixed(2);
     };
 
     const badgeColor = poseOk
-        ? "#00ff88"
-        : detectionQuality > 0.3
-          ? "#ffaa00"
-          : "#555";
+        ? "#63aaca"
+        : cameraActive
+          ? "#e2b93b"
+          : "#6c757d";
     const statusText = poseOk
-        ? "POSE DETECTED ✓"
-        : detectionQuality > 0.3
-          ? "POOR POSE QUALITY"
-          : "NO POSE DETECTED";
+        ? "✓ КИЙИМ КИЙИЛДИ"
+        : cameraActive
+          ? "⚠️ ДЕНЕҢИЗДИ КОЮҢУЗ"
+          : "⏳ КАМЕРА КОШУЛУУДА...";
 
     return (
-        <div
-            style={{
-                minHeight: "100vh",
-                background: "#09090d",
-                color: "#ddd",
-                fontFamily: "monospace",
-                padding: 20,
-            }}
-        >
+        <div className={styles.container}>
             {isExtractingGarment && (
-                <div
-                    style={{
-                        position: "fixed",
-                        inset: 0,
-                        background: "#09090d",
-                        zIndex: 100,
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "center",
-                    }}
-                >
-                    <div style={{ textAlign: "center" }}>
-                        <h2 style={{ color: "#00ff88", marginBottom: 20 }}>
-                            🤖 PROCESSING GARMENT...
-                        </h2>
-                        <div style={{ color: "#888" }}>
-                            Using AI to extract clothing
-                        </div>
+                <div className={styles.loadingOverlay}>
+                    <div className={styles.loadingContent}>
+                        <div className={styles.kyrgyzPattern} />
+                        <Typography
+                            variant="h2"
+                            className={styles.loadingTitle}
+                        >
+                            🎨 КИЙИМ ДАЯРДАЛУУДА...
+                        </Typography>
+                        <Typography
+                            variant="h6"
+                            className={styles.loadingSubtitle}
+                        >
+                            AI кийимди иштеп жатат
+                        </Typography>
                     </div>
                 </div>
             )}
 
-            <div
-                style={{
-                    display: "flex",
-                    gap: 20,
-                    flexWrap: "wrap",
-                    maxWidth: 1400,
-                    margin: "0 auto",
-                }}
-            >
-                <div style={{ position: "relative", flex: 2, minWidth: 300 }}>
+            <div className={styles.mainLayout}>
+                <div ref={containerRef} className={styles.videoContainer}>
                     <video
                         ref={videoRef}
-                        style={{ display: "none" }}
+                        className={styles.hiddenVideo}
                         playsInline
                         muted
                         autoPlay
                     />
                     <canvas
                         ref={canvasRef}
-                        style={{
-                            width: "100%",
-                            borderRadius: 10,
-                            border: `2px solid ${badgeColor}`,
-                            transform: "scaleX(-1)",
-                            boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
-                        }}
+                        className={styles.canvas}
+                        style={{ borderColor: badgeColor }}
+                        onClick={takeScreenshot}
                     />
-                    {flash && (
-                        <div
-                            style={{
-                                position: "absolute",
-                                inset: 0,
-                                background: "white",
-                                opacity: 0.7,
-                                borderRadius: 10,
-                                pointerEvents: "none",
-                            }}
-                        />
-                    )}
-
-                    <div
-                        style={{
-                            position: "absolute",
-                            bottom: 10,
-                            left: 10,
-                            background: "rgba(0,0,0,0.7)",
-                            padding: "5px 10px",
-                            borderRadius: 5,
-                            fontSize: 12,
-                            color: badgeColor,
-                            fontFamily: "monospace",
-                        }}
+                    {flash && <div className={styles.flashOverlay} />}
+                    <Typography
+                        variant="h5"
+                        className={styles.statusBadge}
+                        style={{ color: badgeColor }}
                     >
                         {statusText}
-                    </div>
+                    </Typography>
+                    <Typography variant="h5" className={styles.screenshotHint}>
+                        Сүрөткө тартуу үчүн басыңыз
+                    </Typography>
                 </div>
 
-                <div
-                    style={{
-                        flex: 1,
-                        minWidth: 250,
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 15,
-                    }}
-                >
+                <div className={styles.controlsPanel}>
                     <button
                         onClick={takeScreenshot}
-                        style={{
-                            background: "#00ff88",
-                            color: "#09090d",
-                            padding: "15px 20px",
-                            borderRadius: 8,
-                            fontWeight: "bold",
-                            border: "none",
-                            cursor: "pointer",
-                            fontSize: 16,
-                            transition: "transform 0.2s",
-                        }}
-                        onMouseEnter={(e) =>
-                            (e.target.style.transform = "scale(1.02)")
-                        }
-                        onMouseLeave={(e) =>
-                            (e.target.style.transform = "scale(1)")
-                        }
+                        className={styles.screenshotButton}
                     >
-                        📸 TAKE SCREENSHOT
+                        <Typography variant="h6" component="span">
+                            📸 СҮРӨТКӨ ТАРТУУ
+                        </Typography>
                     </button>
 
-                    <div
-                        style={{
-                            background: "#1a1a1a",
-                            padding: 15,
-                            borderRadius: 8,
-                        }}
-                    >
-                        <h4 style={{ margin: "0 0 10px 0", color: "#00ff88" }}>
-                            Tips for best results:
-                        </h4>
-                        <ul
-                            style={{
-                                margin: 0,
-                                paddingLeft: 20,
-                                fontSize: 12,
-                                color: "#aaa",
-                            }}
-                        >
-                            <li>Stand facing the camera directly</li>
-                            <li>Keep arms slightly away from body</li>
-                            <li>Ensure good lighting</li>
-                            <li>Show full upper body in frame</li>
-                            <li>Stand against plain background</li>
-                        </ul>
+                    <div className={styles.controlCard}>
+                        <div className={styles.cardHeader}>
+                            <span className={styles.cardIcon}>📏</span>
+                            <Typography
+                                variant="h4"
+                                className={styles.cardTitle}
+                            >
+                                Кийимдин өлчөмү
+                            </Typography>
+                        </div>
+                        <div className={styles.sliderContainer}>
+                            <Typography
+                                variant="h6"
+                                className={styles.sliderLabel}
+                            >
+                                Кичине
+                            </Typography>
+                            <input
+                                type="range"
+                                min="1.0"
+                                max="5.0"
+                                step="0.05"
+                                value={garmentSize}
+                                onChange={(e) =>
+                                    setGarmentSize(parseFloat(e.target.value))
+                                }
+                                className={styles.slider}
+                            />
+                            <Typography
+                                variant="h6"
+                                className={styles.sliderLabel}
+                            >
+                                Чоң
+                            </Typography>
+                        </div>
+                        <Typography variant="h4" className={styles.sliderValue}>
+                            {formatSizeValue(garmentSize)}
+                        </Typography>
+                        <Typography variant="h6" className={styles.sliderHint}>
+                            Ийин кеңдигинин өлчөмү
+                        </Typography>
                     </div>
 
-                    {logs.length > 0 && (
-                        <div
-                            style={{
-                                background: "#000",
-                                padding: 10,
-                                fontSize: 10,
-                                maxHeight: 200,
-                                overflow: "auto",
-                                borderRadius: 5,
-                                fontFamily: "monospace",
-                            }}
-                        >
-                            {logs.map((msg, i) => (
-                                <div key={i} style={{ marginBottom: 4 }}>
-                                    › {msg}
-                                </div>
-                            ))}
+                    <div className={styles.controlCard}>
+                        <div className={styles.cardHeader}>
+                            <span className={styles.cardIcon}>📐</span>
+                            <Typography
+                                variant="h4"
+                                className={styles.cardTitle}
+                            >
+                                Тик абал
+                            </Typography>
                         </div>
-                    )}
+                        <div className={styles.sliderContainer}>
+                            <Typography
+                                variant="h6"
+                                className={styles.sliderLabel}
+                            >
+                                Төмөн
+                            </Typography>
+                            <input
+                                type="range"
+                                min="0"
+                                max="0.4"
+                                step="0.01"
+                                value={verticalPosition}
+                                onChange={(e) =>
+                                    setVerticalPosition(
+                                        parseFloat(e.target.value)
+                                    )
+                                }
+                                className={styles.slider}
+                            />
+                            <Typography
+                                variant="h6"
+                                className={styles.sliderLabel}
+                            >
+                                Жогору
+                            </Typography>
+                        </div>
+                        <Typography variant="h4" className={styles.sliderValue}>
+                            {formatVerticalValue(verticalPosition)}
+                        </Typography>
+                        <Typography variant="h6" className={styles.sliderHint}>
+                            Кийимдин бийиктигин тууралаңыз
+                        </Typography>
+                    </div>
                 </div>
             </div>
         </div>

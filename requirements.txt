@@ -1,0 +1,12 @@
+django
+gunicorn
+psycopg2-binary      
+python-dotenv    
+django-cors-headers 
+requests        
+
+mediapipe
+opencv-python-headless 
+google-cloud-aiplatform
+numpy
+pillow            

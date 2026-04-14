@@ -367,8 +367,8 @@ export default function ARTryOnPage({ productImageUrl: productImageUrlProp }) {
     const statusText = poseOk
         ? "✓ КИЙИМ КИЙИЛДИ"
         : cameraActive
-          ? "⚠️ ДЕНЕҢИЗДИ КОЮҢУЗ"
-          : "⏳ КАМЕРА КОШУЛУУДА...";
+          ? "ДЕНЕҢИЗДИ КОЮҢУЗ"
+          : "КАМЕРА КОШУЛУУДА...";
 
     return (
         <div className={styles.container}>

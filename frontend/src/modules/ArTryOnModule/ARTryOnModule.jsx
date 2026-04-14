@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import styles from "./ARTryOnModule.module.scss";
 import { Typography } from "../../ui/Typography/Typography";
@@ -79,8 +79,6 @@ const drawGarmentOnBody = (
 
     const leftShoulder = getLandmark(11);
     const rightShoulder = getLandmark(12);
-    const leftHip = getLandmark(23);
-    const rightHip = getLandmark(24);
 
     if (
         !leftShoulder ||
@@ -100,17 +98,6 @@ const drawGarmentOnBody = (
         rightShoulder.x - leftShoulder.x,
         rightShoulder.y - leftShoulder.y
     );
-
-    let torsoHeight = shoulderWidth * 1.3;
-    if (
-        leftHip &&
-        rightHip &&
-        leftHip.visibility > 0.3 &&
-        rightHip.visibility > 0.3
-    ) {
-        const hipCenterY = (leftHip.y + rightHip.y) / 2;
-        torsoHeight = Math.abs(hipCenterY - shoulderCenter.y);
-    }
 
     const shoulderAngle = Math.atan2(
         rightShoulder.y - leftShoulder.y,
@@ -150,39 +137,24 @@ export default function ARTryOnPage({ productImageUrl: productImageUrlProp }) {
 
     const [poseOk, setPoseOk] = useState(false);
     const [garmentImage, setGarmentImage] = useState(null);
-    const [logs, setLogs] = useState([]);
     const [flash, setFlash] = useState(false);
     const [isExtractingGarment, setIsExtractingGarment] = useState(false);
     const [cameraActive, setCameraActive] = useState(false);
     const [garmentSize, setGarmentSize] = useState(2.5);
     const [verticalPosition, setVerticalPosition] = useState(0.12);
 
-    const log = useCallback((msg) => {
-        console.log(msg);
-        setLogs((prev) => [...prev.slice(-49), msg]);
-    }, []);
-
     useEffect(() => {
-        if (!productImageUrl) {
-            log("⚠️ Продукт сүрөтү жок");
-            return;
-        }
-
         setIsExtractingGarment(true);
         const loadFallback = () => {
-            log("📦 Кийим сүрөтү түздөн-түз жүктөлүүдө...");
             const img = new Image();
             img.crossOrigin = "Anonymous";
             img.onload = () => {
-                log(`✅ Кийим жүктөлдү: ${img.width}x${img.height}`);
                 createMaskedGarment(img).then((maskedImg) => {
                     setGarmentImage(maskedImg);
                     setIsExtractingGarment(false);
-                    log("✅ Кийим кийип көрүүгө даяр");
                 });
             };
             img.onerror = (err) => {
-                log(`⚠️ Кийим жүктөлбөй калды: ${err}`);
                 setIsExtractingGarment(false);
             };
             img.src = productImageUrl;
@@ -194,24 +166,18 @@ export default function ARTryOnPage({ productImageUrl: productImageUrlProp }) {
                 return res.blob();
             })
             .then(async (blob) => {
-                log("🔍 Vertex AIге жиберилүүдө...");
                 const extracted = await extractGarmentWithVertexAI(blob);
                 if (extracted) {
-                    log("✅ Vertex AI кийимди ийгиликтүү алып чыкты");
                     setGarmentImage(extracted);
                     setIsExtractingGarment(false);
                 } else {
-                    log(
-                        "⚠️ Vertex AI иштебей калды, резервдик вариант колдонулууда"
-                    );
                     loadFallback();
                 }
             })
             .catch((err) => {
-                log(`⚠️ Ката: ${err.message}, резервдик вариант колдонулууда`);
                 loadFallback();
             });
-    }, [productImageUrl, log]);
+    }, [productImageUrl]);
 
     useEffect(() => {
         let destroyed = false;
@@ -219,8 +185,6 @@ export default function ARTryOnPage({ productImageUrl: productImageUrlProp }) {
 
         const init = async () => {
             try {
-                log("🎥 Камерага уруксат суралууда...");
-
                 stream = await navigator.mediaDevices.getUserMedia({
                     video: {
                         facingMode: "user",
@@ -228,9 +192,6 @@ export default function ARTryOnPage({ productImageUrl: productImageUrlProp }) {
                         height: { ideal: 720 },
                     },
                 });
-
-                log("✅ Камерага уруксат берилди");
-
                 if (videoRef.current) {
                     videoRef.current.srcObject = stream;
                     videoRef.current.onloadedmetadata = () => {
@@ -239,7 +200,6 @@ export default function ARTryOnPage({ productImageUrl: productImageUrlProp }) {
                     };
                 }
 
-                log("📥 MediaPipe Pose жүктөлүүдө...");
                 if (!window.Pose) {
                     await new Promise((resolve, reject) => {
                         const script = document.createElement("script");
@@ -251,7 +211,6 @@ export default function ARTryOnPage({ productImageUrl: productImageUrlProp }) {
                         document.head.appendChild(script);
                     });
                 }
-                log("✅ MediaPipe жүктөлдү");
 
                 const pose = new window.Pose({
                     locateFile: (file) =>
@@ -362,9 +321,7 @@ export default function ARTryOnPage({ productImageUrl: productImageUrlProp }) {
                 };
 
                 detectLoop();
-            } catch (error) {
-                console.error("Camera error:", error);
-            }
+            } catch (error) {}
         };
 
         init();
@@ -381,7 +338,7 @@ export default function ARTryOnPage({ productImageUrl: productImageUrlProp }) {
                 stream.getTracks().forEach((track) => track.stop());
             }
         };
-    }, [garmentImage, garmentSize, verticalPosition, log]);
+    }, [garmentImage, garmentSize, verticalPosition]);
 
     const takeScreenshot = () => {
         if (!canvasRef.current) return;
@@ -392,7 +349,6 @@ export default function ARTryOnPage({ productImageUrl: productImageUrlProp }) {
         link.download = `virtual-tryon-${Date.now()}.png`;
         link.href = canvasRef.current.toDataURL("image/png");
         link.click();
-        log("📸 Сүрөт сакталды");
     };
 
     const formatSizeValue = (value) => {

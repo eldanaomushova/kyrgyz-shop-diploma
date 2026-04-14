@@ -39,7 +39,7 @@ export const Footer = () => {
                             <ul className={styles.list}>
                                 {section.links.map((link) => (
                                     <li key={link}>
-                                        <a href="#">{link}</a>
+                                        <a href="/">{link}</a>
                                     </li>
                                 ))}
                             </ul>
@@ -51,7 +51,7 @@ export const Footer = () => {
                         <p className={styles.text}>
                             Join now and get 10% off your first purchase!
                         </p>
-                        <a href="#" className={styles.readMore}>
+                        <a href="/" className={styles.readMore}>
                             READ MORE
                         </a>
                     </div>

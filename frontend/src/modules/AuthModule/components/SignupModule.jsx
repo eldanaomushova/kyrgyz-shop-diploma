@@ -1,11 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../useAuth/useAuth";
 import { Typography } from "../../../ui/Typography/Typography";
 import { Button } from "../../../ui/Buttons/Button";
 import styles from "./AuthModule.module.scss";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
 import { PATH } from "../../../utils/Constants/Constants";
 
 export const SignupModule = () => {
@@ -69,7 +68,7 @@ export const SignupModule = () => {
             actions.clearError();
         } else {
         }
-    }, []);
+    }, [actions]);
 
     return (
         <div className={styles.authWrapper}>

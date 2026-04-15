@@ -8,8 +8,7 @@ from .product_views import (
     get_available_filters,
     get_product_stats,
 )
-
-from .ar_try_on_views import extract_garment_view
+from .ar_try_on_views import extract_garment_view 
 
 from .cart_views import cart_operations, cart_item_detail
 

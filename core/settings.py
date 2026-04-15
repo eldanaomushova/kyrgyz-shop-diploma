@@ -1,3 +1,4 @@
+# settings.py - CORRECTED VERSION
 """
 Django settings for core project.
 
@@ -10,29 +11,39 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
-from pathlib import Path
 import os
+from pathlib import Path
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+IN_CLOUD_RUN = os.environ.get('CLOUD_RUN', 'False') == 'True'
+
+google_creds_raw = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS_JSON')
+if google_creds_raw:
+    cred_path = os.path.join(BASE_DIR, "google_creds.json")
+    with open(cred_path, "w") as f:
+        f.write(google_creds_raw)
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = cred_path
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-rd=%3@rqy1l+iv=hws__%(1z*0t2**5=zf_nvj$+z4a8b!$6xd'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-#7ad_bwn^)...')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['stilno-788181191989.us-central1.run.app', 'localhost', '127.0.0.1', '.run.app']
+CSRF_TRUSTED_ORIGINS = ['https://stilno-788181191989.us-central1.run.app']
 
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+CORS_ALLOW_CREDENTIALS = True
 
 # Application definition
-
 INSTALLED_APPS = [
+    'django_extensions',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -43,9 +54,11 @@ INSTALLED_APPS = [
     'corsheaders',
     'api',
     'chatbot',
+    'drf_spectacular',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -60,7 +73,9 @@ ROOT_URLCONF = 'core.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            BASE_DIR / 'templates',
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -75,21 +90,30 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
-
-# Database
-# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+if IN_CLOUD_RUN:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': 'diploma',   
+            'USER': 'postgres',
+            'PASSWORD': '412054Ma.',
+            'HOST': '/cloudsql/probable-tape-421308:us-central1:my-postgres-db',
+            'PORT': '5432',
+        }
     }
-}
-
-
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': 'diploma_db',
+            'USER': 'eldana',
+            'PASSWORD': '654321',
+            'HOST': '127.0.0.1',
+            'PORT': '5432',
+        }
+    }
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -105,26 +129,57 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
 
-STATIC_URL = 'static/'
+# Media files (Uploaded files)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Ensure media directories exist
+# THIS MUST COME AFTER MEDIA_ROOT IS DEFINED
+os.makedirs(MEDIA_ROOT, exist_ok=True)
+os.makedirs(os.path.join(MEDIA_ROOT, 'tryon_results'), exist_ok=True)
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-DATA_UPLOAD_MAX_NUMBER_FIELDS = 45000
+
+# REST Framework settings
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+# DRF Spectacular settings
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Your Project API',
+    'DESCRIPTION': 'API documentation for registration and authentication',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_PATCH': True,
+}
+
+# Mbank Configuration
+MBANK_MERCHANT_ID = os.getenv('MBANK_MERCHANT_ID', 'your_test_merchant_id')
+MBANK_MERCHANT_SECRET = os.getenv('MBANK_MERCHANT_SECRET', 'your_test_secret')
+
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+API_URL = os.getenv('API_URL', 'http://localhost:8000')

@@ -20,7 +20,7 @@ llm = ChatGroq(
 )
 session_history = []
 def search_csv_directly(query):
-    csv_path = os.path.join(settings.BASE_DIR, 'DIPLOMA-PROJECT', 'data', 'products.csv')
+    csv_path = os.path.join(settings.BASE_DIR, 'products.csv')
     
     if not os.path.exists(csv_path):
         return f"Ката: Файл табылган жок."

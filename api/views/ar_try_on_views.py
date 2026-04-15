@@ -3,6 +3,7 @@ import io
 import base64
 import logging
 import tempfile
+import requests
 from PIL import Image
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, parser_classes
@@ -11,9 +12,6 @@ from django.views.decorators.csrf import csrf_exempt
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
-from rembg import remove
-from rembg import remove, new_session
-import numpy as np
 
 load_dotenv()
 
@@ -71,19 +69,35 @@ def extract_garment_view(request):
 
 
 def remove_background(image_path):
-    """Remove background from image using rembg"""
+    """Remove background from image using remove.bg API"""
     try:
+        api_key = os.environ.get("REMOVE_BGQUICK_API_KEY")
+        if not api_key:
+            logger.error("REMOVE_BGQUICK_API_KEY not set")
+            return None
+
         with open(image_path, 'rb') as f:
-            input_image = f.read()
-        
-        output_image = remove(input_image)
-        
+            image_data = f.read()
+
+        response = requests.post(
+            "https://api.remove.bg/v1.0/removebg",
+            headers={"X-Api-Key": api_key},
+            files={"image_file": ("image.png", image_data, "image/png")},
+            data={"size": "auto"},
+            timeout=30,
+        )
+
+        if response.status_code != 200:
+            logger.error(f"remove.bg API error {response.status_code}: {response.text}")
+            return None
+
         tmp = tempfile.NamedTemporaryFile(suffix='.png', delete=False)
-        tmp.write(output_image)
+        tmp.write(response.content)
         tmp.close()
-        
-        logger.info(f"✅ Background removed - {len(output_image)} bytes")
+
+        logger.info(f"✅ Background removed via remove.bg - {len(response.content)} bytes")
         return tmp.name
+
     except Exception as e:
         logger.error(f"Background removal failed: {e}")
         return None
@@ -162,37 +176,4 @@ def extract_garment(pil_image, garment_type='top'):
             logger.error("⚠️ Model not found")
         else:
             logger.error(f"Gemini extraction error: {e}", exc_info=True)
-        return None
-
-
-def extract_garment_with_segmentation(pil_image, garment_type='top'):
-    try:
-        session = new_session("u2net") 
-        
-        output = remove(pil_image, session=session)
-        
-        output_np = np.array(output)
-        
-        alpha = output_np[:, :, 3] if output_np.shape[2] == 4 else np.ones(output_np.shape[:2]) * 255
-        non_transparent = np.where(alpha > 0)
-        
-        if len(non_transparent[0]) > 0:
-            y_min, y_max = max(0, non_transparent[0].min() - 10), min(output_np.shape[0], non_transparent[0].max() + 10)
-            x_min, x_max = max(0, non_transparent[1].min() - 10), min(output_np.shape[1], non_transparent[1].max() + 10)
-            
-            cropped = output.crop((x_min, y_min, x_max, y_max))
-            white_bg = Image.new('RGBA', cropped.size, (255, 255, 255, 255))
-            white_bg.paste(cropped, (0, 0), cropped)
-            
-            tmp = tempfile.NamedTemporaryFile(suffix='.png', delete=False)
-            white_bg.convert('RGB').save(tmp, format='PNG')
-            tmp.close()
-            
-            logger.info(f"✅ Segmentation extraction successful")
-            return tmp.name
-        
-        return None
-        
-    except Exception as e:
-        logger.error(f"Segmentation extraction failed: {e}")
         return None

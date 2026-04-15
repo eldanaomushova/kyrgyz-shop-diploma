@@ -17,7 +17,7 @@ import google.auth.transport.requests
 
 logger = logging.getLogger(__name__)
 key_path = os.path.join(settings.BASE_DIR, 'google_key.json')
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = key_path
+os.environ["GOOGLE_APPLICATION_CREDENTIALS_JSON"] = key_path
 
 
 aiplatform.init(
@@ -85,8 +85,6 @@ def image_try_on(request):
 
 def process_virtual_try_on_vertex(person_path, garment_path):
     try:
-        key_path = '/Users/eldanaomusova/Desktop/Projects/Diploma-Project/google_key.json'
-
         if not os.path.exists(key_path):
             logger.error(f"Google key not found at: {key_path}")
             return None

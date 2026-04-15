@@ -22,7 +22,7 @@ if google_creds_raw:
     cred_path = os.path.join(BASE_DIR, "google_creds.json")
     with open(cred_path, "w") as f:
         f.write(google_creds_raw)
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = cred_path
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS_JSON"] = cred_path
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

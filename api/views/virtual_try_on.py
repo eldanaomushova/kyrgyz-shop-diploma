@@ -221,7 +221,7 @@ def process_virtual_try_on_local(person_image_path, garment_image_path):
 
         person_width, person_height = person.size
 
-        target_width = int(person_width * 0.55)
+        target_width = int(person_width * 0.85)
         target_height = int(garment.height * (target_width / garment.width))
         garment_resized = garment.resize((target_width, target_height), Image.Resampling.LANCZOS)
 

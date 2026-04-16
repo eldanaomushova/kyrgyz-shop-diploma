@@ -18,7 +18,6 @@ from .payment_views import initiate_payment, payment_status
 
 from .recommendation_views import clothing_questionnaire
 
-# Export all views
 __all__ = [
     'image_try_on',
     'pose_estimation_view',

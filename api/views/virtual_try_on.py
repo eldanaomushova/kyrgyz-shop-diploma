@@ -14,20 +14,38 @@ import requests
 import base64
 from google.oauth2 import service_account
 import google.auth.transport.requests
+import google.auth
 
 logger = logging.getLogger(__name__)
-key_path = os.path.join(settings.BASE_DIR, 'google_key.json')
-os.environ["GOOGLE_APPLICATION_CREDENTIALS_JSON"] = key_path
 
+def get_access_token():
+    try:
+        credentials, project = google.auth.default(
+            scopes=["https://www.googleapis.com/auth/cloud-platform"]
+        )
+        
+        auth_request = google.auth.transport.requests.Request()
+        credentials.refresh(auth_request)
+        
+        if not credentials.valid:
+            logger.error("Credentials are not valid after refresh")
+            return None
+            
+        return credentials.token
+    except Exception as e:
+        logger.error(f"Failed to get access token: {e}", exc_info=True)
+        return None
 
-aiplatform.init(
-    project='probable-tape-421308',
-    location='us-central1',
-    credentials=None 
-)
+try:
+    aiplatform.init(
+        project='probable-tape-421308',
+        location='us-central1',
+    )
+    vertexai.init(project='probable-tape-421308', location='us-central1')
+    logger.info("Vertex AI initialized successfully")
+except Exception as e:
+    logger.warning(f"Vertex AI initialization failed: {e}")
 
-
-vertexai.init(project='probable-tape-421308', location='us-central1')
 @api_view(['POST'])
 def image_try_on(request):
     try:
@@ -59,6 +77,11 @@ def image_try_on(request):
             result_image_path = process_virtual_try_on_vertex(person_path, garment_path)
             
             if not result_image_path:
+                # Fallback to local processing if Vertex AI fails
+                logger.info("Falling back to local processing...")
+                result_image_path = process_virtual_try_on_local(person_path, garment_path)
+            
+            if not result_image_path:
                 return Response({'error': 'AI processing failed'}, status=500)
 
             result_filename = f"result_{timestamp}.jpg"
@@ -75,27 +98,23 @@ def image_try_on(request):
             
         finally:
             for path in [person_path, garment_path]:
-                if os.path.exists(path): os.unlink(path)
+                if os.path.exists(path): 
+                    try:
+                        os.unlink(path)
+                    except:
+                        pass
             
     except Exception as e:
         logger.error(f"Error: {str(e)}", exc_info=True)
         return Response({'error': str(e)}, status=500)
 
-
-
 def process_virtual_try_on_vertex(person_path, garment_path):
+    """Process virtual try-on using Vertex AI (without local key file)"""
     try:
-        if not os.path.exists(key_path):
-            logger.error(f"Google key not found at: {key_path}")
+        access_token = get_access_token()
+        if not access_token:
+            logger.error("Failed to get access token")
             return None
-
-        credentials = service_account.Credentials.from_service_account_file(
-            key_path,
-            scopes=["https://www.googleapis.com/auth/cloud-platform"]
-        )
-        auth_request = google.auth.transport.requests.Request()
-        credentials.refresh(auth_request)
-        access_token = credentials.token
 
         def normalize_to_jpeg(path):
             img = Image.open(path).convert('RGB')
@@ -164,19 +183,19 @@ def process_virtual_try_on_vertex(person_path, garment_path):
 
         response = requests.post(url, json=payload, headers=headers, timeout=120)
         if not response.ok:
-            logger.error(f"VTO API error {response.status_code}: {response.text}")
-        response.raise_for_status()
+            logger.error(f"VTO API error {response.status_code}: {response.text[:500]}")
+            return None
 
         result = response.json()
         predictions = result.get("predictions", [])
 
         if not predictions:
-            logger.error(f"No predictions returned. Full response: {result}")
+            logger.error(f"No predictions returned")
             return None
 
         image_b64 = predictions[0].get("bytesBase64Encoded")
         if not image_b64:
-            logger.error(f"No image in prediction: {predictions[0]}")
+            logger.error(f"No image in prediction")
             return None
 
         image_bytes = base64.b64decode(image_b64)
@@ -186,14 +205,13 @@ def process_virtual_try_on_vertex(person_path, garment_path):
         return temp_output.name
 
     except Exception as e:
-        logger.error(f"Gen AI SDK VTO Error: {e}")
+        logger.error(f"Vertex AI VTO Error: {e}")
         return None
-
 
 def process_virtual_try_on_local(person_image_path, garment_image_path):
     """
     Process virtual try-on locally with improved garment placement
-    No API key required
+    No API key required - works as fallback
     """
     try:
         person = Image.open(person_image_path).convert('RGBA')
@@ -207,14 +225,9 @@ def process_virtual_try_on_local(person_image_path, garment_image_path):
         garment_resized = garment.resize((target_width, target_height), Image.Resampling.LANCZOS)
         
         x_position = (person_width - target_width) // 2
-        y_position = int(person_height * 0.2)  # 20% from top
+        y_position = int(person_height * 0.2)
         
         result = person.copy()
-        
-        shadow = Image.new('RGBA', (target_width + 20, target_height + 20), (0, 0, 0, 0))
-        shadow_draw = ImageDraw.Draw(shadow)
-        shadow_draw.rectangle([(10, 10), (target_width + 10, target_height + 10)], 
-                             fill=(0, 0, 0, 50))
         
         result.paste(garment_resized, (x_position, y_position), garment_resized)
         
@@ -228,32 +241,6 @@ def process_virtual_try_on_local(person_image_path, garment_image_path):
     except Exception as e:
         logger.error(f"Local processing error: {str(e)}")
         return None
-
-
-def process_virtual_try_on_simple(person_image_path, garment_image_path):
-    """
-    Simple fallback processing
-    """
-    person = Image.open(person_image_path).convert('RGB')
-    garment = Image.open(garment_image_path).convert('RGBA')
-    
-    garment_size = (200, 200)
-    garment_resized = garment.resize(garment_size)
-    
-    result = person.copy()
-    result = result.convert('RGBA')
-    
-    x = (result.width - garment_size[0]) // 2
-    y = int(result.height * 0.2)
-    
-    result.paste(garment_resized, (x, y), garment_resized)
-    result = result.convert('RGB')
-    
-    temp_output = tempfile.NamedTemporaryFile(suffix='.jpg', delete=False)
-    result.save(temp_output.name, 'JPEG', quality=95)
-    
-    return temp_output.name
-
 
 @api_view(['POST'])
 def pose_estimation_view(request):
@@ -284,7 +271,6 @@ def pose_estimation_view(request):
         logger.error(f"Pose estimation error: {str(e)}")
         return Response({'error': str(e)}, status=500)
 
-
 def detect_pose_keypoints(image_path):
     """Detect pose keypoints using simple image analysis"""
     from PIL import Image
@@ -307,7 +293,6 @@ def detect_pose_keypoints(image_path):
         'right_ankle': {'x': width * 0.65, 'y': height * 0.9}
     }
 
-
 def calculate_clothing_zones(keypoints):
     """Calculate clothing placement zones from keypoints"""
     return {
@@ -324,7 +309,6 @@ def calculate_clothing_zones(keypoints):
             'height': keypoints['left_hip']['y'] - keypoints['nose']['y']
         }
     }
-
 
 @api_view(['GET'])
 def test_image_access(request, filename):

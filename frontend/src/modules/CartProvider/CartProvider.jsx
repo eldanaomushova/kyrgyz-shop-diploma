@@ -1,17 +1,18 @@
 import React, { useEffect, useState, useContext, createContext } from "react";
+import { requester } from "../../utils/Requester/Requester";
 
 const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
     const [cart, setCart] = useState([]);
-
     const fetchCart = async () => {
         try {
-            const response = await fetch("http://127.0.0.1:8000/api/cart/");
-            const data = await response.json();
-            setCart(data);
+            const response = await requester.get("/api/cart/");
+            setCart(response.data);
+            return response.data;
         } catch (err) {
-            console.error("Fetch Error:", err);
+            setCart([]);
+            return [];
         }
     };
 
@@ -31,13 +32,17 @@ export const CartProvider = ({ children }) => {
         );
 
         try {
-            await fetch(`http://127.0.0.1:8000/api/cart/${productId}/`, {
+            const response = await fetch(`/api/cart/${productId}/`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ quantity: newQuantity }),
             });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
         } catch (err) {
-            console.error("Failed to update quantity:", err);
+            fetchCart();
         }
     };
 
@@ -45,38 +50,34 @@ export const CartProvider = ({ children }) => {
         setCart((prev) => prev.filter((item) => item.id !== productId));
 
         try {
-            const response = await fetch(
-                `http://127.0.0.1:8000/api/cart/${productId}/`,
-                {
-                    // Ensure slash at the end
-                    method: "DELETE",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                }
-            );
+            const response = await fetch(`/api/cart/${productId}/`, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+            });
 
             if (!response.ok) {
-                console.error("Server responded with error:", response.status);
-                // If it failed, refresh the cart from server to show reality
                 fetchCart();
             }
         } catch (err) {
-            console.error("Network error:", err);
             fetchCart();
         }
     };
 
     const addToCart = async (product) => {
         try {
-            const response = await fetch("http://127.0.0.1:8000/api/cart/", {
+            const response = await fetch("/api/cart/", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ id: product.id }),
             });
-            if (response.ok) fetchCart();
+
+            if (response.ok) {
+                fetchCart();
+                return true;
+            }
+            return false;
         } catch (err) {
-            console.error("Network Error:", err);
+            return false;
         }
     };
 
@@ -85,17 +86,27 @@ export const CartProvider = ({ children }) => {
         try {
             await Promise.all(
                 ids.map((id) =>
-                    fetch(`http://127.0.0.1:8000/api/cart/${id}/`, {
+                    fetch(`/api/cart/${id}/`, {
                         method: "DELETE",
                         headers: { "Content-Type": "application/json" },
                     })
                 )
             );
-        } catch (err) {
-            console.error("Failed to clear cart items:", err);
-        } finally {
             setCart([]);
+        } catch (err) {
+            fetchCart();
         }
+    };
+
+    const getCartTotal = () => {
+        return cart.reduce((total, item) => {
+            const price = item.price || item.product?.price || 0;
+            return total + price * item.quantity;
+        }, 0);
+    };
+
+    const getCartItemCount = () => {
+        return cart.reduce((count, item) => count + item.quantity, 0);
     };
 
     return (
@@ -106,10 +117,20 @@ export const CartProvider = ({ children }) => {
                 removeFromCart,
                 updateQuantity,
                 clearCart,
+                getCartTotal,
+                getCartItemCount,
+                fetchCart,
             }}
         >
             {children}
         </CartContext.Provider>
     );
 };
-export const useCart = () => useContext(CartContext);
+
+export const useCart = () => {
+    const context = useContext(CartContext);
+    if (!context) {
+        throw new Error("useCart must be used within a CartProvider");
+    }
+    return context;
+};

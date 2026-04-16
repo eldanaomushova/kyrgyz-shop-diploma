@@ -2,6 +2,7 @@ import Swal from "sweetalert2";
 import { useCart } from "../../modules/CartProvider/CartProvider";
 import { useState, useEffect, useRef } from "react";
 import styles from "./ChabotModule.module.scss";
+import { requester } from "../../utils/Requester/Requester";
 
 export const ChatbotModule = () => {
     const [open, setOpen] = useState(false);
@@ -21,8 +22,8 @@ export const ChatbotModule = () => {
         const handleChatAdd = async (event) => {
             const productId = event.detail.productId;
             try {
-                const response = await fetch(
-                    `http://127.0.0.1:8000/api/products/detail/${productId}/`
+                const response = await requester.get(
+                    `/products/detail/${productId}/`
                 );
                 if (!response.ok) throw new Error("Product not found");
                 const productData = await response.json();
@@ -132,7 +133,7 @@ export const ChatbotModule = () => {
         setMessages((prev) => [...prev, { role: "user", text: userMessage }]);
         setIsLoading(true);
         try {
-            const res = await fetch("http://127.0.0.1:8000/chatbot/api/chat/", {
+            const res = await fetch("/chatbot/api/chat/", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ message: userMessage }),

@@ -4,11 +4,11 @@ import psycopg2
 import traceback
 
 DB_CONFIG = {
-    'dbname': 'diploma_db',
+    'dbname': 'diploma',
     'user': 'eldana',
-    'password': '645321',
-    'host': 'localhost',
-    'port': 5432,
+    'password': '412054Ma.',
+    'host': '127.0.0.1',
+    'port': 9470,
 }
 
 def import_products():
@@ -45,6 +45,7 @@ def import_products():
         
         count = 0
         errors = []
+        test_mode_announced = False
         
         with open(csv_path, 'r', encoding='utf-8') as file:
             reader = csv.DictReader(file)
@@ -52,12 +53,6 @@ def import_products():
             for row_num, row in enumerate(reader, start=2):
                 try:
                     # Пропускаем первые 5 строк для теста
-                    if count >= 10:
-                        print("\n✅ Test import of first 10 rows successful!")
-                        print(f"Now importing all {44446} rows...")
-                        # Сбрасываем счетчик и продолжаем импорт всех данных
-                        count = 0
-                    
                     # Обработка года
                     year_value = None
                     year_str = row.get('year', '').strip()

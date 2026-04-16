@@ -1,8 +1,8 @@
 import axios from "axios";
 
 export const requester = axios.create({
-    baseURL: "http://127.0.0.1:8000/",
-    timeout: 10000,
+    baseURL: "https://diploma-project-788181191989.us-central1.run.app/",
+    timeout: 60000,
     headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
@@ -26,7 +26,6 @@ requester.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response && error.response.status === 401) {
-            console.error("Unauthorized! Redirecting to login...");
             localStorage.removeItem("token");
         }
         return Promise.reject(error);

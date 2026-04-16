@@ -1,5 +1,4 @@
 import React, { useState, useRef } from "react";
-import axios from "axios";
 import QuestionaryModule from "../../modules/QuestionaryModule/QuestionaryModule";
 import styles from "./VirtualTryOnModule.module.scss";
 import { Typography } from "../../ui/Typography/Typography";
@@ -7,6 +6,7 @@ import { Button } from "../../ui/Buttons/Button";
 import { useCart } from "../../modules/CartProvider/CartProvider";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
+import { requester } from "../../utils/Requester/Requester";
 
 const getProductImageUrl = (product) => {
     if (!product) return null;
@@ -15,7 +15,7 @@ const getProductImageUrl = (product) => {
     }
     if (product.link) return product.link;
     if (product.filename) {
-        return `http://127.0.0.1:8000/media/products/${product.filename}`;
+        return `/media/products/${product.filename}`;
     }
     return null;
 };
@@ -67,6 +67,7 @@ const VirtualTryOnModule = () => {
             setGeneratedImageUrl(null);
         }
     };
+
     const handleAddToCart = () => {
         if (selectedProduct) {
             addToCart(selectedProduct);
@@ -87,6 +88,17 @@ const VirtualTryOnModule = () => {
         }
     };
 
+    const fetchProductImageAsBlob = async (imageUrl) => {
+        try {
+            const response = await requester.get(imageUrl, {
+                responseType: "blob",
+            });
+            return response.data;
+        } catch (error) {
+            return null;
+        }
+    };
+
     const handleTryOn = async () => {
         if (!userImage || !selectedProduct) return;
 
@@ -95,19 +107,21 @@ const VirtualTryOnModule = () => {
             const formData = new FormData();
             formData.append("person_image", userImage);
 
-            const imageUrl = getProductImageUrl(selectedProduct);
-            if (imageUrl) {
-                const productImageBlob = await fetch(imageUrl).then((res) =>
-                    res.blob()
-                );
-                formData.append(
-                    "garment_image",
-                    productImageBlob,
-                    "garment.jpg"
-                );
+            const productImageUrl = getProductImageUrl(selectedProduct);
+            if (productImageUrl) {
+                const productBlob =
+                    await fetchProductImageAsBlob(productImageUrl);
+                if (productBlob) {
+                    formData.append(
+                        "garment_image",
+                        productBlob,
+                        "garment.jpg"
+                    );
+                }
             }
+            console.log(formData);
 
-            const response = await axios.post(
+            const response = await requester.post(
                 "/api/virtual-try-on/image-try-on/",
                 formData,
                 {
@@ -123,11 +137,23 @@ const VirtualTryOnModule = () => {
             } else if (response.data.generated_image_url) {
                 setGeneratedImageUrl(response.data.generated_image_url);
             } else if (response.data.generated_image_base64) {
-                setGeneratedImageUrl(response.data.generated_image_base64);
+                setGeneratedImageUrl(
+                    `data:image/jpeg;base64,${response.data.generated_image_base64}`
+                );
+            } else if (response.data.image) {
+                setGeneratedImageUrl(response.data.image);
+            } else {
+                throw new Error("No image returned from server");
             }
         } catch (error) {
-            console.error("Error during virtual try-on:", error);
-            alert("Виртуалдык сынап көрүүдө ката кетти. Кайра аракет кылыңыз.");
+            Swal.fire({
+                title: "Ката!",
+                text:
+                    error.response?.data?.error ||
+                    "Виртуалдык сынап көрүүдө ката кетти. Кайра аракет кылыңыз.",
+                icon: "error",
+                confirmButtonText: "Түшүндүм",
+            });
         } finally {
             setLoading(false);
         }
@@ -183,6 +209,9 @@ const VirtualTryOnModule = () => {
                                     src={getProductImageUrl(product)}
                                     alt={product.productDisplayName}
                                     className={styles.productImage}
+                                    onError={(e) => {
+                                        e.target.src = "/placeholder.jpg";
+                                    }}
                                 />
                                 <div className={styles.productInfo}>
                                     <Typography variant="h3">
@@ -192,7 +221,7 @@ const VirtualTryOnModule = () => {
                                         variant="h4"
                                         className={styles.price}
                                     >
-                                        ${product.price}
+                                        {product.price} сом
                                     </Typography>
                                     <Typography
                                         variant="body2"
@@ -252,14 +281,17 @@ const VirtualTryOnModule = () => {
                                     src={getProductImageUrl(selectedProduct)}
                                     className={styles.selectedProductImage}
                                     alt="Product"
+                                    onError={(e) => {
+                                        e.target.src = "/placeholder.jpg";
+                                    }}
                                 />
                             </div>
                             <div className={styles.productDetails}>
                                 <Typography variant="h3">
-                                    {selectedProduct.productDisplayName}
+                                    {selectedProduct?.productDisplayName}
                                 </Typography>
                                 <Typography variant="h4">
-                                    ${selectedProduct.price}
+                                    {selectedProduct?.price} сом
                                 </Typography>
                             </div>
                         </div>
@@ -302,13 +334,15 @@ const VirtualTryOnModule = () => {
                                     onClick={handleTryOn}
                                     disabled={!userImage || loading}
                                 >
-                                    Виртуалдык сынап көрүү
+                                    {loading
+                                        ? "Иштеп жатат..."
+                                        : "Виртуалдык сынап көрүү"}
                                 </button>
                                 <button
                                     className={styles.arLiveButton}
                                     onClick={() =>
                                         navigate(
-                                            `/ar-tryon/${selectedProduct.id}`,
+                                            `/ar-tryon/${selectedProduct?.id}`,
                                             {
                                                 state: {
                                                     productImageUrl:

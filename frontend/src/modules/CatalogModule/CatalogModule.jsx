@@ -3,6 +3,7 @@ import { useSearchParams, Link } from "react-router-dom";
 import styles from "./CatalogModule.module.scss";
 import { Pagination } from "../../ui/Pagination/Pagination";
 import { Footer } from "../../modules/Footer/components/Footer";
+import { requester } from "../../utils/Requester/Requester";
 
 export const CatalogModule = () => {
     const [products, setProducts] = useState([]);
@@ -21,34 +22,34 @@ export const CatalogModule = () => {
     const fetchFilteredProducts = useCallback(async () => {
         setLoading(true);
 
-        let url = `http://127.0.0.1:8000/api/products/?page=${currentPage}&`;
-        if (gender) url += `gender=${encodeURIComponent(gender)}&`;
-        if (sub) url += `sub=${encodeURIComponent(sub)}&`;
-        if (type) url += `type=${encodeURIComponent(type)}&`;
-        if (search) url += `search=${encodeURIComponent(search)}`;
+        const params = new URLSearchParams();
+        params.append("page", currentPage);
+        params.append("page_size", pageSize);
+
+        if (gender) params.append("gender", gender);
+        if (sub) params.append("sub", sub);
+        if (type) params.append("type", type);
+        if (search) params.append("search", search);
 
         try {
-            const response = await fetch(url);
+            const response = await requester.get(`/api/products/`, {
+                params: params,
+            });
 
-            if (response.status === 404) {
+            setProducts(response.data.results || []);
+            setTotalCount(response.data.count || 0);
+        } catch (error) {
+            if (error.response && error.response.status === 404) {
                 setProducts([]);
                 setTotalCount(0);
-                return;
+            } else {
+                setProducts([]);
+                setTotalCount(0);
             }
-
-            if (!response.ok) throw new Error("Server error");
-
-            const data = await response.json();
-            setProducts(data.results || []);
-            setTotalCount(data.count || 0);
-        } catch (error) {
-            console.error("Fetch error:", error);
-            setProducts([]);
-            setTotalCount(0);
         } finally {
             setLoading(false);
         }
-    }, [currentPage, gender, sub, type, search]);
+    }, [currentPage, gender, sub, type, search, pageSize]);
 
     useEffect(() => {
         fetchFilteredProducts();
@@ -59,7 +60,7 @@ export const CatalogModule = () => {
             return product.link.replace("http://", "https://");
         }
         if (product.filename) {
-            return `http://127.0.0.1:8000/media/products/${product.filename}`;
+            return `/media/products/${product.filename}`;
         }
         return "/placeholder.jpg";
     };

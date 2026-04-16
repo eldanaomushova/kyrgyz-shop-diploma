@@ -11,7 +11,7 @@ export const useAuth = create((set) => ({
             set({ loading: true, error: null });
             try {
                 const response = await requester.post(
-                    "api/token/",
+                    "/api/login/",
                     credentials
                 );
                 localStorage.setItem("token", response.data.access);
@@ -23,7 +23,7 @@ export const useAuth = create((set) => ({
         register: async (userData) => {
             set({ loading: true, error: null });
             try {
-                await requester.post("api/register/", userData);
+                await requester.post("/api/register/", userData);
                 set({ loading: false });
                 return { success: true };
             } catch (err) {

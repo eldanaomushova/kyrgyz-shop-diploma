@@ -3,6 +3,7 @@ import axios from "axios";
 import styles from "./QuestionaryModule.module.scss";
 import { Typography } from "../../ui/Typography/Typography";
 import { Button } from "../../ui/Buttons/Button";
+import { requester } from "../../utils/Requester/Requester";
 
 const QuestionaryModule = ({ onComplete }) => {
     const [step, setStep] = useState(0);
@@ -97,7 +98,7 @@ const QuestionaryModule = ({ onComplete }) => {
 
     const submitQuestionnaire = async () => {
         try {
-            const response = await axios.post("/api/questionnaire/", {
+            const response = await requester.post("/api/questionnaire/", {
                 gender: answers.gender,
                 occasion: answers.occasion.toLowerCase(),
                 body_type: answers.body_type.toLowerCase().replace(" ", "_"),
@@ -112,7 +113,6 @@ const QuestionaryModule = ({ onComplete }) => {
 
             onComplete(response.data);
         } catch (error) {
-            console.error("Error submitting questionnaire:", error);
             alert("Error processing your answers. Please try again.");
         }
     };

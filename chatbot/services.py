@@ -11,14 +11,50 @@ from langchain_classic.tools import Tool
 from langchain_classic.agents import AgentExecutor
 from langchain_core.prompts import MessagesPlaceholder
 
-load_dotenv()
+# Load .env file from multiple possible locations
+load_dotenv()  # Current directory
+load_dotenv(os.path.join(settings.BASE_DIR, '.env'))  # Project root
+load_dotenv(os.path.join(settings.BASE_DIR, 'chatbot', '.env'))  # App directory
 
+# Try multiple ways to get the API key
+api_key = os.environ.get('GROQ_API_KEY')
+
+# If not found, try reading from .env file directly
+if not api_key:
+    env_paths = [
+        os.path.join(settings.BASE_DIR, '.env'),
+        os.path.join(settings.BASE_DIR, 'chatbot', '.env'),
+        '/app/.env',  # Docker path
+    ]
+    
+    for env_path in env_paths:
+        if os.path.exists(env_path):
+            with open(env_path, 'r') as f:
+                for line in f:
+                    if line.startswith('GROQ_API_KEY='):
+                        api_key = line.split('=', 1)[1].strip().strip('"').strip("'")
+                        if api_key:
+                            break
+            if api_key:
+                break
+
+# Last resort - check if it's in Google Cloud Secret Manager or environment
+if not api_key:
+    # For Google Cloud Run/App Engine
+    api_key = os.environ.get('GROQ_API_KEY')
+    
+if not api_key:
+    raise ValueError("GROQ_API_KEY not set. Please ensure .env file exists with GROQ_API_KEY=your_key")
+
+# Initialize LLM with explicit API key
 llm = ChatGroq(
     temperature=0,
-    groq_api_key=os.getenv("GROQ_API_KEY"),
+    groq_api_key=api_key,  # Explicitly pass the key
     model_name="llama-3.3-70b-versatile"
 )
+
 session_history = []
+
 def search_csv_directly(query):
     csv_path = os.path.join(settings.BASE_DIR, 'products.csv')
     
@@ -60,6 +96,7 @@ def search_csv_directly(query):
     except Exception as e:
         print(f"--- DEBUG ERROR: {e} ---") 
         return f"CSV окууда ката: {e}"
+
 tools = [
     Tool(
         name="product_search",

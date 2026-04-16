@@ -5,6 +5,7 @@ import { Typography } from "../../ui/Typography/Typography";
 import { useCart } from "../../modules/CartProvider/CartProvider";
 import Swal from "sweetalert2";
 import { Button } from "../../ui/Buttons/Button";
+import { requester } from "../../utils/Requester/Requester";
 
 export const ProductDetailModule = () => {
     const { id } = useParams();
@@ -13,7 +14,6 @@ export const ProductDetailModule = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const { addToCart } = useCart();
-    console.log("Product ID from params:", id);
 
     const handleAddToCart = () => {
         if (product) {
@@ -33,10 +33,24 @@ export const ProductDetailModule = () => {
         }
     };
 
+    const getImageUrl = () => {
+        if (product?.link && product.link.startsWith("http")) {
+            return product.link.replace("http://", "https://");
+        }
+        if (product?.filename) {
+            return `/media/products/${product.filename}`;
+        }
+        return "/placeholder.jpg";
+    };
+
     useEffect(() => {
         const fetchProduct = async () => {
-            // Проверяем наличие id
-            if (!id || id === "undefined" || id === "null") {
+            if (
+                !id ||
+                id === "undefined" ||
+                id === "null" ||
+                isNaN(parseInt(id))
+            ) {
                 setError("Неверный ID товара");
                 setLoading(false);
                 return;
@@ -46,31 +60,31 @@ export const ProductDetailModule = () => {
             setError(null);
 
             try {
-                const response = await fetch(
-                    `http://127.0.0.1:8000/api/products/detail/${id}/`
+                const response = await requester.get(
+                    `/api/products/detail/${id}/`
                 );
+                setProduct(response.data);
+            } catch (error) {
+                console.error("Error fetching product:", error);
 
-                if (response.status === 400) {
-                    setError("Неверный формат ID товара");
-                    setLoading(false);
-                    return;
-                }
-
-                if (!response.ok) {
-                    if (response.status === 404) {
+                if (error.response) {
+                    // Server responded with error status
+                    if (error.response.status === 404) {
                         setError("Товар не найден");
+                    } else if (error.response.status === 400) {
+                        setError("Неверный формат ID товара");
                     } else {
                         setError("Ошибка при загрузке товара");
                     }
-                    setLoading(false);
-                    return;
+                } else if (error.request) {
+                    // Request was made but no response
+                    setError(
+                        "Ошибка соединения с сервером. Проверьте интернет-соединение."
+                    );
+                } else {
+                    // Something else happened
+                    setError("Произошла ошибка при загрузке данных");
                 }
-
-                const data = await response.json();
-                setProduct(data);
-            } catch (error) {
-                console.error("Error:", error);
-                setError("Ошибка соединения с сервером");
             } finally {
                 setLoading(false);
             }
@@ -79,9 +93,9 @@ export const ProductDetailModule = () => {
         fetchProduct();
     }, [id]);
 
-    // Редирект на главную если нет id
+    // Redirect to home if no valid id
     useEffect(() => {
-        if (!id || id === "undefined" || id === "null") {
+        if (!id || id === "undefined" || id === "null" || isNaN(parseInt(id))) {
             const timer = setTimeout(() => {
                 navigate("/");
             }, 3000);
@@ -89,18 +103,28 @@ export const ProductDetailModule = () => {
         }
     }, [id, navigate]);
 
-    if (loading) return <div className={styles.loader}>Загрузка...</div>;
+    if (loading) {
+        return (
+            <div className={styles.loaderContainer}>
+                <div className={styles.loader}>Загрузка...</div>
+            </div>
+        );
+    }
 
     if (error) {
         return (
-            <div className={styles.error}>
-                <Typography variant="h2">Ошибка</Typography>
-                <Typography>{error}</Typography>
-                <Button
-                    variant="blackButton"
-                    text="Вернуться на главную"
-                    onClick={() => navigate("/")}
-                />
+            <div className={styles.errorContainer}>
+                <div className={styles.error}>
+                    <Typography variant="h2">Ошибка</Typography>
+                    <Typography variant="p" className={styles.errorMessage}>
+                        {error}
+                    </Typography>
+                    <Button
+                        variant="blackButton"
+                        text="Вернуться на главную"
+                        onClick={() => navigate("/")}
+                    />
+                </div>
             </div>
         );
     }
@@ -112,25 +136,30 @@ export const ProductDetailModule = () => {
             <div className={styles.container}>
                 <div className={styles.imageGallery}>
                     <img
-                        src={product.link || "/placeholder.jpg"}
-                        alt={product.productDisplayName}
+                        src={getImageUrl()}
+                        alt={product.productDisplayName || "Product image"}
                         className={styles.mainImage}
+                        onError={(e) => {
+                            e.target.src = "/placeholder.jpg";
+                        }}
                     />
                 </div>
 
                 <div className={styles.infoSidebar}>
                     <div className={styles.header}>
                         <Typography variant="h1" className={styles.title}>
-                            {product.productDisplayName}
+                            {product.productDisplayName || "Без названия"}
                         </Typography>
                         <Typography variant="h5" className={styles.price}>
-                            {product.price} сом
+                            {product.price
+                                ? `${product.price} сом`
+                                : "Цена не указана"}
                         </Typography>
                     </div>
 
                     <div className={styles.colorSection}>
                         <Typography variant="h3" className={styles.label}>
-                            Цвет: <span>{product.color}</span>
+                            Цвет: <span>{product.color || "Не указан"}</span>
                         </Typography>
                     </div>
 
@@ -143,7 +172,7 @@ export const ProductDetailModule = () => {
                                 Бренд:
                             </Typography>
                             <Typography className={styles.detailValue}>
-                                {product.brand}
+                                {product.brand || "Не указан"}
                             </Typography>
                         </div>
                         <div className={styles.detailItem}>
@@ -165,15 +194,33 @@ export const ProductDetailModule = () => {
                                 Сезон:
                             </Typography>
                             <Typography className={styles.detailValue}>
-                                {product.season}
+                                {product.season || "Не указан"}
                             </Typography>
                         </div>
+                        {product.gender && (
+                            <div className={styles.detailItem}>
+                                <Typography
+                                    variant="h5"
+                                    className={styles.detailLabel}
+                                >
+                                    Пол:
+                                </Typography>
+                                <Typography className={styles.detailValue}>
+                                    {product.gender === "Men"
+                                        ? "Мужской"
+                                        : product.gender === "Women"
+                                          ? "Женский"
+                                          : product.gender}
+                                </Typography>
+                            </div>
+                        )}
                     </div>
 
                     <Button
                         variant="blackButton"
                         text="Себетке кошуу"
                         onClick={handleAddToCart}
+                        disabled={!product}
                     />
 
                     <div className={styles.description}>
@@ -181,16 +228,21 @@ export const ProductDetailModule = () => {
                             Сүрөттөмө жана курамы
                         </Typography>
                         <Typography variant="p" className={styles.ptext}>
-                            Бул {product.brand} брендинин товары "
-                            {product.usage}" категориясында колдонуу үчүн эң
-                            сонун ийкемдүү келет.
+                            Бул {product.brand || "бренд"} брендинин товары "
+                            {product.usage || "универсальный"}" категориясында
+                            колдонуу үчүн эң сонун ийкемдүү келет.
                         </Typography>
                         <ul>
-                            <li>Түрү: {product.articleType}</li>
+                            <li>Түрү: {product.articleType || "Не указан"}</li>
                             <li>
                                 Силуэт: {product.silhouette || "Классикалык"}
                             </li>
-                            <li>Коллекция жылы: {product.year}</li>
+                            <li>
+                                Коллекция жылы: {product.year || "Не указан"}
+                            </li>
+                            {product.fabric && (
+                                <li>Курамы: {product.fabric}</li>
+                            )}
                         </ul>
                     </div>
                 </div>

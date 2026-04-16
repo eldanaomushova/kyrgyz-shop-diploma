@@ -1,4 +1,3 @@
-# settings.py - CORRECTED VERSION
 """
 Django settings for core project.
 
@@ -14,15 +13,17 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-IN_CLOUD_RUN = os.environ.get('CLOUD_RUN', 'False') == 'True'
+import dj_database_url
 
-google_creds_raw = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS_JSON')
+BASE_DIR = Path(__file__).resolve().parent.parent
+IN_CLOUD_RUN = os.environ.get('CLOUD_RUN', 'False') == 'False'
+
+google_creds_raw = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
 if google_creds_raw:
     cred_path = os.path.join(BASE_DIR, "google_creds.json")
     with open(cred_path, "w") as f:
         f.write(google_creds_raw)
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS_JSON"] = cred_path
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = cred_path
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -31,15 +32,27 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-#7ad_bwn^)...'
 
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = ['stilno-788181191989.us-central1.run.app', 'localhost', '127.0.0.1', '.run.app']
-CSRF_TRUSTED_ORIGINS = ['https://stilno-788181191989.us-central1.run.app']
+CSRF_TRUSTED_ORIGINS = [
+    'https://diploma-project-788181191989.us-central1.run.app',
+    'http://diploma-project-788181191989.us-central1.run.app',
+    'http://localhost:8000', 
+    'http://127.0.0.1:8000', 
+    'https://run.app'
+]
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    '.run.app',  
+]
 
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
+    'https://diploma-project-788181191989.us-central1.run.app',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
 ]
 CORS_ALLOW_CREDENTIALS = True
+
 
 # Application definition
 INSTALLED_APPS = [
@@ -66,6 +79,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
 ]
 
 ROOT_URLCONF = 'core.urls'
@@ -90,28 +104,24 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
-if IN_CLOUD_RUN:
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
+if DATABASE_URL:
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': 'diploma',   
-            'USER': 'postgres',
-            'PASSWORD': '412054Ma.',
-            'HOST': '/cloudsql/probable-tape-421308:us-central1:my-postgres-db',
-            'PORT': '5432',
-        }
+        'default': dj_database_url.parse(DATABASE_URL)
     }
 else:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
-            'NAME': 'diploma_db',
-            'USER': 'eldana',
-            'PASSWORD': '654321',
-            'HOST': '127.0.0.1',
-            'PORT': '5432',
+            'NAME': os.environ.get('DB_NAME', 'diploma'),
+            'USER': os.environ.get('DB_USER', 'eldana'),
+            'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+            'HOST': os.environ.get('DB_HOST', '127.0.0.1'),
+            'PORT': os.environ.get('DB_PORT', '5432'),
         }
     }
+
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 AUTH_PASSWORD_VALIDATORS = [
@@ -136,6 +146,7 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 STATIC_URL = '/static/'
@@ -144,9 +155,6 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
 
-# Media files (Uploaded files)
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Ensure media directories exist
 # THIS MUST COME AFTER MEDIA_ROOT IS DEFINED

@@ -112,16 +112,14 @@ export const Header = () => {
                                 />
                             )}
 
-                            {/* Search Button */}
                             <Button
                                 variant="icon"
                                 onClick={() => setIsSearchOpen(true)}
-                                className={styles.iconBtn} // Changed from cartIconWrapper to iconBtn
+                                className={styles.iconBtn}
                             >
                                 <Search size={18} />
                             </Button>
 
-                            {/* User Button */}
                             <Button
                                 variant="icon"
                                 icon={<User size={18} />}
@@ -129,7 +127,6 @@ export const Header = () => {
                                 className={styles.iconBtn}
                             />
 
-                            {/* Cart Button */}
                             <Button
                                 variant="icon"
                                 onClick={() => navigate(PATH.cart)}

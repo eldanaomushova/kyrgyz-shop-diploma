@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import styles from "./SidebarMenu.module.scss";
 import { X } from "lucide-react";
 import { Typography } from "../../ui/Typography/Typography";
+import { requester } from "../../utils/Requester/Requester";
 
 export const SidebarMenu = ({ isOpen, onClose, gender }) => {
     const [categoriesTree, setCategoriesTree] = useState(null);
@@ -11,11 +12,8 @@ export const SidebarMenu = ({ isOpen, onClose, gender }) => {
         const fetchCategories = async () => {
             setLoading(true);
             try {
-                const response = await fetch(
-                    "http://127.0.0.1:8000/api/categories-tree/"
-                );
-                const data = await response.json();
-                setCategoriesTree(data);
+                const response = await requester.get("/api/categories-tree/");
+                setCategoriesTree(response.data);
             } catch (error) {
                 console.error("Ошибка при загрузке дерева категорий:", error);
             } finally {

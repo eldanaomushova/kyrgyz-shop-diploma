@@ -2,38 +2,36 @@ import React, { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import styles from "./ARTryOnModule.module.scss";
 import { Typography } from "../../ui/Typography/Typography";
+import { requester } from "../../utils/Requester/Requester";
 
 const extractGarmentWithVertexAI = async (imageFile) => {
     try {
         const formData = new FormData();
         formData.append("product_image", imageFile);
+        formData.append("garment_type", "top");
 
-        const response = await fetch("/api/virtual-try-on/extract-garment/", {
-            method: "POST",
-            body: formData,
-        });
+        const response = await requester.post(
+            "/api/virtual-try-on/extract-garment/",
+            formData,
+            {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+            }
+        );
 
-        if (!response.ok) {
-            return null;
-        }
-
-        const data = await response.json();
-
-        if (data.success && data.image_url) {
-            return new Promise((resolve) => {
+        if (response.data && response.data.success && response.data.image_url) {
+            return new Promise((resolve, reject) => {
                 const img = new Image();
                 img.crossOrigin = "Anonymous";
-                img.onload = () => {
-                    resolve(img);
-                };
-                img.onerror = () => {
-                    resolve(null);
-                };
-                img.src = data.image_url;
+                img.onload = () => resolve(img);
+                img.onerror = () => reject(null);
+                img.src = response.data.image_url;
             });
         }
         return null;
     } catch (error) {
+        console.error("Extraction error:", error);
         return null;
     }
 };
@@ -144,7 +142,10 @@ export default function ARTryOnPage({ productImageUrl: productImageUrlProp }) {
     const [verticalPosition, setVerticalPosition] = useState(0.12);
 
     useEffect(() => {
+        if (!productImageUrl) return;
+
         setIsExtractingGarment(true);
+
         const loadFallback = () => {
             const img = new Image();
             img.crossOrigin = "Anonymous";
@@ -154,7 +155,7 @@ export default function ARTryOnPage({ productImageUrl: productImageUrlProp }) {
                     setIsExtractingGarment(false);
                 });
             };
-            img.onerror = (err) => {
+            img.onerror = () => {
                 setIsExtractingGarment(false);
             };
             img.src = productImageUrl;
@@ -174,7 +175,7 @@ export default function ARTryOnPage({ productImageUrl: productImageUrlProp }) {
                     loadFallback();
                 }
             })
-            .catch((err) => {
+            .catch(() => {
                 loadFallback();
             });
     }, [productImageUrl]);
@@ -321,7 +322,9 @@ export default function ARTryOnPage({ productImageUrl: productImageUrlProp }) {
                 };
 
                 detectLoop();
-            } catch (error) {}
+            } catch (error) {
+                console.error("Camera error:", error);
+            }
         };
 
         init();

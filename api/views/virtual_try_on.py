@@ -8,56 +8,44 @@ from rest_framework.decorators import api_view
 from PIL import Image, ImageDraw
 import shutil
 from django.http import JsonResponse, FileResponse
-import vertexai
-from google.cloud import aiplatform
 import requests
 import base64
-from google.oauth2 import service_account
-import google.auth.transport.requests
 import google.auth
+import google.auth.transport.requests
 
 logger = logging.getLogger(__name__)
+
 
 def get_access_token():
     try:
         credentials, project = google.auth.default(
             scopes=["https://www.googleapis.com/auth/cloud-platform"]
         )
-        
         auth_request = google.auth.transport.requests.Request()
         credentials.refresh(auth_request)
-        
+
         if not credentials.valid:
             logger.error("Credentials are not valid after refresh")
             return None
-            
+
         return credentials.token
     except Exception as e:
         logger.error(f"Failed to get access token: {e}", exc_info=True)
         return None
 
-try:
-    aiplatform.init(
-        project='probable-tape-421308',
-        location='us-central1',
-    )
-    vertexai.init(project='probable-tape-421308', location='us-central1')
-    logger.info("Vertex AI initialized successfully")
-except Exception as e:
-    logger.warning(f"Vertex AI initialization failed: {e}")
 
 @api_view(['POST'])
 def image_try_on(request):
     try:
         person_img = request.FILES.get('person_image')
         garment_img = request.FILES.get('garment_image')
-        
+
         if not person_img or not garment_img:
             return Response({'error': 'Both images are required'}, status=400)
-        
+
         tryon_results_dir = os.path.join(settings.MEDIA_ROOT, 'tryon_results')
         os.makedirs(tryon_results_dir, exist_ok=True)
-        
+
         timestamp = int(time.time())
         person_path = os.path.join(tryon_results_dir, f'person_{timestamp}.jpg')
         garment_path = os.path.join(tryon_results_dir, f'garment_{timestamp}.jpg')
@@ -72,75 +60,77 @@ def image_try_on(request):
 
         logger.info(f"Person file size: {os.path.getsize(person_path)} bytes")
         logger.info(f"Garment file size: {os.path.getsize(garment_path)} bytes")
-        
+
         try:
             result_image_path = process_virtual_try_on_vertex(person_path, garment_path)
-            
+
             if not result_image_path:
-                # Fallback to local processing if Vertex AI fails
-                logger.info("Falling back to local processing...")
+                logger.info("Vertex AI failed, falling back to local processing...")
                 result_image_path = process_virtual_try_on_local(person_path, garment_path)
-            
+
             if not result_image_path:
                 return Response({'error': 'AI processing failed'}, status=500)
 
             result_filename = f"result_{timestamp}.jpg"
             final_path = os.path.join(tryon_results_dir, result_filename)
             shutil.copy2(result_image_path, final_path)
-            
+
+            # Clean up temp result
+            if os.path.exists(result_image_path):
+                try:
+                    os.unlink(result_image_path)
+                except:
+                    pass
+
             result_url = f"{settings.MEDIA_URL}tryon_results/{result_filename}"
-            
+
             return Response({
                 "success": True,
                 "result_url": result_url,
-                "message": "AI Virtual try-on completed!"
+                "message": "Virtual try-on completed!"
             })
-            
+
         finally:
             for path in [person_path, garment_path]:
-                if os.path.exists(path): 
+                if os.path.exists(path):
                     try:
                         os.unlink(path)
                     except:
                         pass
-            
+
     except Exception as e:
         logger.error(f"Error: {str(e)}", exc_info=True)
         return Response({'error': str(e)}, status=500)
 
+
+def normalize_to_jpeg(path):
+    """Convert any image to JPEG and return path to temp file."""
+    img = Image.open(path).convert('RGB')
+    buf = tempfile.NamedTemporaryFile(suffix='.jpg', delete=False)
+    img.save(buf.name, 'JPEG', quality=95)
+    buf.close()
+    return buf.name
+
+
 def process_virtual_try_on_vertex(person_path, garment_path):
-    """Process virtual try-on using Vertex AI (without local key file)"""
+    """Process virtual try-on using Vertex AI Virtual Try-On API."""
+    person_normalized = None
+    garment_normalized = None
     try:
         access_token = get_access_token()
         if not access_token:
             logger.error("Failed to get access token")
             return None
 
-        def normalize_to_jpeg(path):
-            img = Image.open(path).convert('RGB')
-            buf = tempfile.NamedTemporaryFile(suffix='.jpg', delete=False)
-            img.save(buf.name, 'JPEG', quality=95)
-            buf.close()
-            return buf.name
-
         person_normalized = normalize_to_jpeg(person_path)
         garment_normalized = normalize_to_jpeg(garment_path)
 
-        try:
-            with open(person_normalized, "rb") as f:
-                person_b64 = base64.b64encode(f.read()).decode("utf-8")
-            with open(garment_normalized, "rb") as f:
-                garment_b64 = base64.b64encode(f.read()).decode("utf-8")
-        finally:
-            for p in [person_normalized, garment_normalized]:
-                if os.path.exists(p):
-                    os.unlink(p)
+        with open(person_normalized, "rb") as f:
+            person_b64 = base64.b64encode(f.read()).decode("utf-8")
+        with open(garment_normalized, "rb") as f:
+            garment_b64 = base64.b64encode(f.read()).decode("utf-8")
 
         logger.info(f"Person b64 length: {len(person_b64)}, Garment b64 length: {len(garment_b64)}")
-
-        if not person_b64 or not garment_b64:
-            logger.error("One or both images failed to encode")
-            return None
 
         project_id = 'probable-tape-421308'
         region = 'us-central1'
@@ -153,26 +143,19 @@ def process_virtual_try_on_vertex(person_path, garment_path):
             "instances": [
                 {
                     "personImage": {
-                        "image": {
-                            "bytesBase64Encoded": person_b64
-                        }
+                        "bytesBase64Encoded": person_b64
                     },
                     "productImages": [
                         {
-                            "image": {
-                                "bytesBase64Encoded": garment_b64
-                            }
+                            "bytesBase64Encoded": garment_b64
                         }
-                    ]
+                    ],
+                    "person_generation": "ALLOW_ALL"
                 }
             ],
             "parameters": {
                 "sampleCount": 1,
-                "baseSteps": 32,
-                "person_generation": "ALLOW_ALL", 
-                "outputOptions": {
-                    "mimeType": "image/jpeg"
-                }
+                "baseSteps": 32
             }
         }
 
@@ -181,81 +164,97 @@ def process_virtual_try_on_vertex(person_path, garment_path):
             "Content-Type": "application/json"
         }
 
+        logger.info(f"Calling Vertex AI VTO API: {url}")
         response = requests.post(url, json=payload, headers=headers, timeout=120)
+
         if not response.ok:
-            logger.error(f"VTO API error {response.status_code}: {response.text[:500]}")
+            logger.error(f"VTO API error {response.status_code}: {response.text[:1000]}")
             return None
 
         result = response.json()
-        predictions = result.get("predictions", [])
+        logger.info(f"VTO API response keys: {list(result.keys())}")
 
+        predictions = result.get("predictions", [])
         if not predictions:
-            logger.error(f"No predictions returned")
+            logger.error(f"No predictions in response: {result}")
             return None
 
-        image_b64 = predictions[0].get("bytesBase64Encoded")
+        # Try both possible response key names
+        image_b64 = (
+            predictions[0].get("bytesBase64Encoded")
+            or predictions[0].get("image", {}).get("bytesBase64Encoded")
+        )
+
         if not image_b64:
-            logger.error(f"No image in prediction")
+            logger.error(f"No image data in prediction: {list(predictions[0].keys())}")
             return None
 
         image_bytes = base64.b64decode(image_b64)
         temp_output = tempfile.NamedTemporaryFile(suffix='.jpg', delete=False)
         temp_output.write(image_bytes)
         temp_output.close()
+
+        logger.info(f"VTO result saved to: {temp_output.name}")
         return temp_output.name
 
     except Exception as e:
-        logger.error(f"Vertex AI VTO Error: {e}")
+        logger.error(f"Vertex AI VTO Error: {e}", exc_info=True)
         return None
+
+    finally:
+        for p in [person_normalized, garment_normalized]:
+            if p and os.path.exists(p):
+                try:
+                    os.unlink(p)
+                except:
+                    pass
+
 
 def process_virtual_try_on_local(person_image_path, garment_image_path):
     """
-    Process virtual try-on locally with improved garment placement
-    No API key required - works as fallback
+    Fallback local processing — overlays garment onto person image.
+    No API required.
     """
     try:
         person = Image.open(person_image_path).convert('RGBA')
         garment = Image.open(garment_image_path).convert('RGBA')
-        
+
         person_width, person_height = person.size
-        
-        target_width = int(person_width * 0.45)
+
+        target_width = int(person_width * 0.55)
         target_height = int(garment.height * (target_width / garment.width))
-        
         garment_resized = garment.resize((target_width, target_height), Image.Resampling.LANCZOS)
-        
+
         x_position = (person_width - target_width) // 2
         y_position = int(person_height * 0.2)
-        
+
         result = person.copy()
-        
         result.paste(garment_resized, (x_position, y_position), garment_resized)
-        
         result = result.convert('RGB')
-        
+
         temp_output = tempfile.NamedTemporaryFile(suffix='.jpg', delete=False)
         result.save(temp_output.name, 'JPEG', quality=95)
-        
+        logger.info(f"Local fallback result saved to: {temp_output.name}")
         return temp_output.name
-        
+
     except Exception as e:
-        logger.error(f"Local processing error: {str(e)}")
+        logger.error(f"Local processing error: {str(e)}", exc_info=True)
         return None
+
 
 @api_view(['POST'])
 def pose_estimation_view(request):
-    """Detect body pose for better garment fitting"""
+    """Detect body pose for better garment fitting."""
     try:
         person_img = request.FILES.get('person_image')
-        
         if not person_img:
             return Response({'error': 'person_image required'}, status=400)
-        
+
         with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as temp:
             for chunk in person_img.chunks():
                 temp.write(chunk)
             temp_path = temp.name
-        
+
         try:
             keypoints = detect_pose_keypoints(temp_path)
             return Response({
@@ -266,53 +265,55 @@ def pose_estimation_view(request):
         finally:
             if os.path.exists(temp_path):
                 os.unlink(temp_path)
-            
+
     except Exception as e:
-        logger.error(f"Pose estimation error: {str(e)}")
+        logger.error(f"Pose estimation error: {str(e)}", exc_info=True)
         return Response({'error': str(e)}, status=500)
 
+
 def detect_pose_keypoints(image_path):
-    """Detect pose keypoints using simple image analysis"""
-    from PIL import Image
+    """Estimate pose keypoints using proportional image analysis."""
     img = Image.open(image_path)
     width, height = img.size
-    
+
     return {
-        'nose': {'x': width * 0.5, 'y': height * 0.1},
-        'left_shoulder': {'x': width * 0.3, 'y': height * 0.25},
-        'right_shoulder': {'x': width * 0.7, 'y': height * 0.25},
-        'left_elbow': {'x': width * 0.25, 'y': height * 0.35},
-        'right_elbow': {'x': width * 0.75, 'y': height * 0.35},
-        'left_wrist': {'x': width * 0.2, 'y': height * 0.45},
-        'right_wrist': {'x': width * 0.8, 'y': height * 0.45},
-        'left_hip': {'x': width * 0.35, 'y': height * 0.55},
-        'right_hip': {'x': width * 0.65, 'y': height * 0.55},
-        'left_knee': {'x': width * 0.35, 'y': height * 0.75},
-        'right_knee': {'x': width * 0.65, 'y': height * 0.75},
-        'left_ankle': {'x': width * 0.35, 'y': height * 0.9},
-        'right_ankle': {'x': width * 0.65, 'y': height * 0.9}
+        'nose':            {'x': width * 0.50, 'y': height * 0.10},
+        'left_shoulder':   {'x': width * 0.30, 'y': height * 0.25},
+        'right_shoulder':  {'x': width * 0.70, 'y': height * 0.25},
+        'left_elbow':      {'x': width * 0.25, 'y': height * 0.35},
+        'right_elbow':     {'x': width * 0.75, 'y': height * 0.35},
+        'left_wrist':      {'x': width * 0.20, 'y': height * 0.45},
+        'right_wrist':     {'x': width * 0.80, 'y': height * 0.45},
+        'left_hip':        {'x': width * 0.35, 'y': height * 0.55},
+        'right_hip':       {'x': width * 0.65, 'y': height * 0.55},
+        'left_knee':       {'x': width * 0.35, 'y': height * 0.75},
+        'right_knee':      {'x': width * 0.65, 'y': height * 0.75},
+        'left_ankle':      {'x': width * 0.35, 'y': height * 0.90},
+        'right_ankle':     {'x': width * 0.65, 'y': height * 0.90},
     }
 
+
 def calculate_clothing_zones(keypoints):
-    """Calculate clothing placement zones from keypoints"""
+    """Calculate clothing placement zones from keypoints."""
     return {
         'torso_zone': {
             'x': keypoints['left_shoulder']['x'],
             'y': keypoints['left_shoulder']['y'],
-            'width': keypoints['right_shoulder']['x'] - keypoints['left_shoulder']['x'],
-            'height': keypoints['left_hip']['y'] - keypoints['left_shoulder']['y']
+            'width':  keypoints['right_shoulder']['x'] - keypoints['left_shoulder']['x'],
+            'height': keypoints['left_hip']['y']      - keypoints['left_shoulder']['y'],
         },
         'upper_body': {
             'x': keypoints['left_shoulder']['x'],
             'y': keypoints['nose']['y'],
-            'width': keypoints['right_shoulder']['x'] - keypoints['left_shoulder']['x'],
-            'height': keypoints['left_hip']['y'] - keypoints['nose']['y']
+            'width':  keypoints['right_shoulder']['x'] - keypoints['left_shoulder']['x'],
+            'height': keypoints['left_hip']['y']       - keypoints['nose']['y'],
         }
     }
 
+
 @api_view(['GET'])
 def test_image_access(request, filename):
-    """Test endpoint to check if image exists"""
+    """Test endpoint to verify image file accessibility."""
     try:
         file_path = os.path.join(settings.MEDIA_ROOT, 'tryon_results', filename)
         if os.path.exists(file_path):

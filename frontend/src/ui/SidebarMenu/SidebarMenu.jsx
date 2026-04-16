@@ -68,7 +68,6 @@ export const SidebarMenu = ({ isOpen, onClose, gender }) => {
                         ))}
                 </div>
             </div>
-            {/* Затемнение фона */}
             <div className={styles.overlay} onClick={onClose} />
         </>
     );

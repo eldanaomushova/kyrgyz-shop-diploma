@@ -103,6 +103,10 @@ const VirtualTryOnModule = () => {
         if (!userImage || !selectedProduct) return;
 
         setLoading(true);
+
+        const abortController = new AbortController();
+        const timeoutId = setTimeout(() => abortController.abort(), 55000);
+
         try {
             const formData = new FormData();
             formData.append("person_image", userImage);
@@ -119,8 +123,6 @@ const VirtualTryOnModule = () => {
                     );
                 }
             }
-            console.log(formData);
-
             const response = await requester.post(
                 "/api/virtual-try-on/image-try-on/",
                 formData,
@@ -129,8 +131,12 @@ const VirtualTryOnModule = () => {
                         "X-CSRFToken": getCookie("csrftoken"),
                         "Content-Type": "multipart/form-data",
                     },
+                    timeout: 55000,
+                    signal: abortController.signal,
                 }
             );
+
+            clearTimeout(timeoutId);
 
             if (response.data.result_url) {
                 setGeneratedImageUrl(response.data.result_url);
@@ -146,19 +152,28 @@ const VirtualTryOnModule = () => {
                 throw new Error("No image returned from server");
             }
         } catch (error) {
-            Swal.fire({
-                title: "Ката!",
-                text:
-                    error.response?.data?.error ||
-                    "Виртуалдык сынап көрүүдө ката кетти. Кайра аракет кылыңыз.",
-                icon: "error",
-                confirmButtonText: "Түшүндүм",
-            });
+            if (error.name === "AbortError" || error.code === "ECONNABORTED") {
+                Swal.fire({
+                    title: "Убакыт жетишсиз!",
+                    text: "Виртуалдык сынап көрүү узак убакыт талап кылат. Сураныч, кийинчерээк кайра аракет кылыңыз же башка сүрөт менен сынап көрүңүз.",
+                    icon: "warning",
+                    confirmButtonText: "Түшүндүм",
+                });
+            } else {
+                Swal.fire({
+                    title: "Ката!",
+                    text:
+                        error.response?.data?.error ||
+                        "Виртуалдык сынап көрүүдө ката кетти. Кайра аракет кылыңыз.",
+                    icon: "error",
+                    confirmButtonText: "Түшүндүм",
+                });
+            }
         } finally {
+            clearTimeout(timeoutId);
             setLoading(false);
         }
     };
-
     const resetProcess = () => {
         setStage("questionnaire");
         setRecommendations([]);

@@ -5,12 +5,14 @@ const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
     const [cart, setCart] = useState([]);
+
     const fetchCart = async () => {
         try {
             const response = await requester.get("/api/cart/");
             setCart(response.data);
             return response.data;
         } catch (err) {
+            console.error("Errorfetching cart:", err);
             setCart([]);
             return [];
         }
@@ -32,17 +34,12 @@ export const CartProvider = ({ children }) => {
         );
 
         try {
-            const response = await fetch(`/api/cart/${productId}/`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ quantity: newQuantity }),
+            await requester.patch(`/api/cart/${productId}/`, {
+                quantity: newQuantity,
             });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
         } catch (err) {
-            fetchCart();
+            console.error("Error updating quantity:", err);
+            await fetchCart(); // Revert on error
         }
     };
 
@@ -50,39 +47,37 @@ export const CartProvider = ({ children }) => {
         setCart((prev) => prev.filter((item) => item.id !== productId));
 
         try {
-            const response = await fetch(`/api/cart/${productId}/`, {
-                method: "DELETE",
-                headers: { "Content-Type": "application/json" },
-            });
-
-            if (!response.ok) {
-                fetchCart();
-            }
+            await requester.delete(`/api/cart/${productId}/`);
         } catch (err) {
-            fetchCart();
+            console.error("Error removing from cart:", err);
+            await fetchCart(); // Revert on error
         }
     };
 
     const addToCart = async (product) => {
         console.log("Adding product to cart:", product);
         try {
-            const response = await fetch("/api/cart/", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id: product.id }),
+            const response = await requester.post("/api/cart/", {
+                id: product.id,
             });
 
             console.log("Response status:", response.status);
-            const responseData = await response.json();
-            console.log("Response data:", responseData);
+            console.log("Response data:", response.data);
 
-            if (response.ok) {
+            if (response.status === 200 || response.status === 201) {
                 await fetchCart();
                 return true;
             }
             return false;
         } catch (err) {
-            console.error("Error:", err);
+            console.error("Error adding to cart:", err);
+            if (err.response) {
+                console.error(
+                    "Server responded with:",
+                    err.response.status,
+                    err.response.data
+                );
+            }
             return false;
         }
     };
@@ -91,16 +86,12 @@ export const CartProvider = ({ children }) => {
         const ids = cart.map((item) => item.id);
         try {
             await Promise.all(
-                ids.map((id) =>
-                    fetch(`/api/cart/${id}/`, {
-                        method: "DELETE",
-                        headers: { "Content-Type": "application/json" },
-                    })
-                )
+                ids.map((id) => requester.delete(`/api/cart/${id}/`))
             );
             setCart([]);
         } catch (err) {
-            fetchCart();
+            console.error("Error clearing cart:", err);
+            await fetchCart();
         }
     };
 

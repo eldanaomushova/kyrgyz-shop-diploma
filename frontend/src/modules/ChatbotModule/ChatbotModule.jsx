@@ -132,24 +132,25 @@ export const ChatbotModule = () => {
         setInput("");
         setMessages((prev) => [...prev, { role: "user", text: userMessage }]);
         setIsLoading(true);
+
         try {
-            const res = await fetch("/chatbot/api/chat/", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ message: userMessage }),
+            const response = await requester.post("/chatbot/api/chat/", {
+                message: userMessage,
             });
-            const data = await res.json();
-            const botText = data.response || "Кечириңиз, ката кетти.";
+            const botText =
+                response.data?.response ||
+                response.response ||
+                "Кечириңиз, ката кетти.";
             setMessages((prev) => [
                 ...prev,
                 {
                     role: "bot",
                     text: botText,
-                    audio: data.audio,
+                    audio: botText,
                 },
             ]);
-            if (data.audio) {
-                playKyrgyzVoice(data.audio);
+            if (botText) {
+                playKyrgyzVoice(botText);
             }
         } catch (error) {
             setMessages((prev) => [

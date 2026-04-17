@@ -2,65 +2,92 @@ import os
 import re
 import pandas as pd
 import markdown
+import logging
 from django.conf import settings
-from dotenv import load_dotenv
-from langchain_groq import ChatGroq
-from langchain_classic.agents import create_tool_calling_agent
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_classic.tools import Tool
-from langchain_classic.agents import AgentExecutor
-from langchain_core.prompts import MessagesPlaceholder
 
-# Load .env file from multiple possible locations
-load_dotenv()  # Current directory
-load_dotenv(os.path.join(settings.BASE_DIR, '.env'))  # Project root
-load_dotenv(os.path.join(settings.BASE_DIR, 'chatbot', '.env'))  # App directory
+logger = logging.getLogger(__name__)
 
-# Try multiple ways to get the API key
-api_key = os.environ.get('GROQ_API_KEY')
+_llm = None
+_agent_executor = None
+_session_history = []
 
-# If not found, try reading from .env file directly
-if not api_key:
-    env_paths = [
-        os.path.join(settings.BASE_DIR, '.env'),
-        os.path.join(settings.BASE_DIR, 'chatbot', '.env'),
-        '/app/.env',  # Docker path
-    ]
+def _init_agent():
+    """Ленивая инициализация агента - только когда реально нужен"""
+    global _llm, _agent_executor
     
-    for env_path in env_paths:
-        if os.path.exists(env_path):
-            with open(env_path, 'r') as f:
-                for line in f:
-                    if line.startswith('GROQ_API_KEY='):
-                        api_key = line.split('=', 1)[1].strip().strip('"').strip("'")
-                        if api_key:
-                            break
-            if api_key:
-                break
-
-# Last resort - check if it's in Google Cloud Secret Manager or environment
-if not api_key:
-    # For Google Cloud Run/App Engine
-    api_key = os.environ.get('GROQ_API_KEY')
+    if _agent_executor is not None:
+        return True
     
-if not api_key:
-    raise ValueError("GROQ_API_KEY not set. Please ensure .env file exists with GROQ_API_KEY=your_key")
-
-# Initialize LLM with explicit API key
-llm = ChatGroq(
-    temperature=0,
-    groq_api_key=api_key,  # Explicitly pass the key
-    model_name="llama-3.3-70b-versatile"
-)
-
-session_history = []
+    try:
+        # Импортируем только внутри функции
+        from langchain_groq import ChatGroq
+        from langchain_classic.agents import create_tool_calling_agent, AgentExecutor
+        from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+        from langchain_classic.tools import Tool
+        
+        api_key = os.environ.get('GROQ_API_KEY')
+        if not api_key:
+            logger.error("GROQ_API_KEY not found in environment")
+            return False
+        
+        _llm = ChatGroq(
+            temperature=0,
+            groq_api_key=api_key,
+            model_name="llama-3.3-70b-versatile"
+        )
+        
+        tools = [
+            Tool(
+                name="product_search",
+                func=search_csv_directly,
+                description="Дүкөндөн товарларды издөө үчүн. Параметр: товардын аты."
+            )
+        ]
+        
+        agent_prompt = ChatPromptTemplate.from_messages([
+            ("system", (
+                "Сиз Кыргызстандагы интернет-дүкөндүн соода ассистентисиз. "
+                "Жоопту дайыма КЫРГЫЗ тилинде бериңиз.\n\n"
+                "ЛОГИКА:\n"
+                "1. Эгер колдонуучу учурашса же жалпы суроо берсе, "
+                "аспапты колдонбостон, дароо кыргызча жылуу жооп бериңиз.\n"
+                "2. Эгер колдонуучу конкреттүү товарды сураса гана 'product_search' аспабын колдонуңуз.\n\n"
+                "ТОВАР ТАБЫЛГАНДАГЫ ФОРМАТ:\n"
+                "📦 **[Аты]**\n"
+                "Баасы: [Баасы] сом\n"
+                "ID: [ID]"
+            )),
+            MessagesPlaceholder(variable_name="chat_history", optional=True),
+            ("human", "{input}"),
+            MessagesPlaceholder(variable_name="agent_scratchpad"),
+        ])
+        
+        agent = create_tool_calling_agent(_llm, tools, agent_prompt)
+        _agent_executor = AgentExecutor(
+            agent=agent, 
+            tools=tools, 
+            verbose=False,
+            handle_parsing_errors=True
+        )
+        
+        logger.info("✅ Agent initialized successfully")
+        return True
+        
+    except ImportError as e:
+        logger.error(f"Import error: {e}.")
+        return False
+    except Exception as e:
+        logger.error(f"Failed to initialize agent: {e}")
+        return False
 
 def search_csv_directly(query):
+    """Поиск товаров в CSV"""
     csv_path = os.path.join(settings.BASE_DIR, 'products.csv')
     
     if not os.path.exists(csv_path):
-        return f"Ката: Файл табылган жок."
-
+        logger.error(f"CSV not found: {csv_path}")
+        return "Ката: Товарлар базасы табылган жок."
+    
     try:
         df = pd.read_csv(csv_path)
         search_terms = str(query).lower().split()
@@ -72,7 +99,7 @@ def search_csv_directly(query):
         available_cols = [c for c in search_columns if c in df.columns]
 
         if not available_cols:
-            return "Ката: CSV файлында тиешелүү колонкалар табылган жок."
+            return "Ката: CSV форматы туура эмес."
 
         combined_text = df[available_cols].fillna('').astype(str).agg(' '.join, axis=1).str.lower()
 
@@ -94,56 +121,21 @@ def search_csv_directly(query):
         
         return context
     except Exception as e:
-        print(f"--- DEBUG ERROR: {e} ---") 
+        logger.error(f"CSV search error: {e}")
         return f"CSV окууда ката: {e}"
 
-tools = [
-    Tool(
-        name="product_search",
-        func=search_csv_directly,
-        description="Дүкөндөн товарларды издөө үчүн. Параметр: товардын аты."
-    )
-]
-
-agent_prompt = ChatPromptTemplate.from_messages([
-    ("system", (
-        "Сиз Кыргызстандагы интернет-дүкөндүн соода ассистентисиз. "
-        "Жоопту дайыма КЫРГЫЗ тилинде бериңиз.\n\n"
-        
-        "ЛОГИКА:\n"
-        "1. Эгер колдонуучу учурашса (мисалы: 'салам', 'кандай') же жалпы суроо берсе, "
-        "аспапты (tool) колдонбостон, дароо кыргызча жылуу жооп бериңиз.\n"
-        "2. Эгер колдонуучу конкреттүү товарды сураса гана 'product_search' аспабын колдонуңуз.\n\n"
-        
-        "ТОВАР ТАБЫЛГАНДАГЫ ФОРМАТ:\n"
-        "📦 **[Аты]**\n"
-        "Баасы: [Баасы] сом\n"
-        "ID: [ID]\n"
-        "3. Эгер товар табылбаса, кыскача 'Кечириңиз, табылган жок' деп айтыңыз."
-    )),
-    MessagesPlaceholder(variable_name="chat_history", optional=True),
-    ("human", "{input}"),
-    MessagesPlaceholder(variable_name="agent_scratchpad"),
-])
-
-agent = create_tool_calling_agent(llm, tools, agent_prompt)
-agent_executor = AgentExecutor(
-    agent=agent, 
-    tools=tools, 
-    verbose=True, 
-    handle_parsing_errors=True
-)
-
 def format_with_buttons(text):
+    """Добавляет кнопки к ответу"""
     match = re.search(r"ID[:\s]*(\d+)", text, re.IGNORECASE)
     id = match.group(1) if match else None
 
     html_content = markdown.markdown(text)
 
     if id:
+        frontend_url = os.environ.get('FRONTEND_URL', 'https://diploma-project-788181191989.us-central1.run.app')
         button_html = f"""
         <div style="margin-top: 10px; display: flex; gap: 8px;">
-            <a href="http://localhost:3000/product/{id}" 
+            <a href="{frontend_url}/product/{id}" 
                target="_blank"
                style="text-decoration:none; background-color:#007bff; color:white; padding:8px 16px; border-radius:5px; font-weight:bold; font-size:13px;">
                Көрүү
@@ -155,20 +147,42 @@ def format_with_buttons(text):
     return html_content
 
 def get_shopping_response(message):
-    global session_history
+    """Получение ответа от чат-бота"""
+    global _session_history
+    
+    # Пробуем инициализировать агента
+    if not _init_agent():
+        # Fallback если агент не доступен
+        logger.warning("Using fallback response - agent not available")
+        
+        message_lower = message.lower()
+        
+        if any(word in message_lower for word in ['салам', 'сalam', 'привет', 'hello']):
+            return "Саламатсызбы! Мен сизге кандай жардам бере алам?"
+        elif any(word in message_lower for word in ['рахмат', 'спасибо']):
+            return "Эч нерсе эмес! Дагы суроолоруңуз болсо, жазыңыз."
+        elif any(word in message_lower for word in ['кийим', 'көйнөк', 'шым']):
+            search_result = search_csv_directly(message)
+            if "ID:" in search_result:
+                return format_with_buttons(f"Мына, сиз издеген товарлар:\n{search_result}")
+            return search_result
+        else:
+            return "Кечириңиз, азыр техникалык тейлөө иштери жүрүп жатат. Кийинчерээк кайрылыңыз."
+    
     try:
-        result = agent_executor.invoke({
+        result = _agent_executor.invoke({
             "input": message,
-            "chat_history": session_history 
+            "chat_history": _session_history 
         })
         output_text = result.get("output", "")
 
-        session_history.append({"role": "user", "content": message})
-        session_history.append({"role": "assistant", "content": output_text})
+        _session_history.append({"role": "user", "content": message})
+        _session_history.append({"role": "assistant", "content": output_text})
 
-        if len(session_history) > 10:
-            session_history = session_history[-10:]
+        if len(_session_history) > 10:
+            _session_history = _session_history[-10:]
 
         return format_with_buttons(output_text)
     except Exception as e:
-        return f"❌ Ката: {str(e)}"
+        logger.error(f"Agent error: {e}")
+        return f"❌ Кечириңиз, ката кетти. Кайра аракет кылыңыз." 

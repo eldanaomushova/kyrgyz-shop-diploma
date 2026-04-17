@@ -3,27 +3,27 @@ import { Instagram, Youtube, Facebook, Music2 } from "lucide-react";
 
 const FOOTER_DATA = [
     {
-        title: "Shop",
-        links: ["Women", "Men", "Kids", "H&M Home"],
+        title: "Дүкөн",
+        links: ["Аялдар", "Эркектер", "Балдар", "H&M Home"],
     },
     {
-        title: "Corporate Info",
+        title: "Корпоративдик маалымат",
         links: [
-            "Career at H&M",
-            "About H&M Group",
-            "Sustainability",
-            "Press",
-            "Investor Relations",
+            "H&Mдеги карьера",
+            "H&M Group жөнүндө",
+            "Туруктуулук",
+            "Пресс",
+            "Инвесторлор менен байланыш",
         ],
     },
     {
-        title: "Help",
+        title: "Жардам",
         links: [
-            "Customer Service",
-            "My Account",
-            "Find a Store",
-            "Legal & Privacy",
-            "Contact Us",
+            "Кардарларды тейлөө",
+            "Менин аккаунтум",
+            "Дүкөндү табуу",
+            "Юридикалык жана купуялык",
+            "Байланышуу",
         ],
     },
 ];
@@ -47,12 +47,13 @@ export const Footer = () => {
                     ))}
 
                     <div className={styles.column}>
-                        <h3 className={styles.title}>Not a member yet?</h3>
+                        <h3 className={styles.title}>Мүчө эмессизби?</h3>
                         <p className={styles.text}>
-                            Join now and get 10% off your first purchase!
+                            Азыр кошулуңуз жана биринчи сатып алууңузга 10%
+                            жеңилдик алыңыз!
                         </p>
                         <a href="/" className={styles.readMore}>
-                            READ MORE
+                            КЕНИРЭЭК
                         </a>
                     </div>
                 </div>
@@ -69,8 +70,8 @@ export const Footer = () => {
                         <Facebook size={20} />
                     </div>
                     <p className={styles.copyright}>
-                        The content of this site is copyright-protected and is
-                        the property of STIL.NO.
+                        Бул сайттын мазмуну автордук укук менен корголгон жана
+                        STIL.NO компаниясынын менчиги болуп саналат.
                     </p>
                 </div>
             </div>

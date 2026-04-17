@@ -11,7 +11,6 @@ from django.conf.urls.static import static
 from django.http import FileResponse, Http404, HttpResponse
 import os
 
-# Define the function BEFORE using it in urlpatterns
 def serve_media_files(request, path):
     """Serve media files directly"""
     file_path = os.path.join(settings.MEDIA_ROOT, path)

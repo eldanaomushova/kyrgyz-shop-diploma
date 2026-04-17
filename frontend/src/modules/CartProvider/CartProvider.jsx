@@ -64,6 +64,7 @@ export const CartProvider = ({ children }) => {
     };
 
     const addToCart = async (product) => {
+        console.log("Adding product to cart:", product);
         try {
             const response = await fetch("/api/cart/", {
                 method: "POST",
@@ -71,12 +72,17 @@ export const CartProvider = ({ children }) => {
                 body: JSON.stringify({ id: product.id }),
             });
 
+            console.log("Response status:", response.status);
+            const responseData = await response.json();
+            console.log("Response data:", responseData);
+
             if (response.ok) {
-                fetchCart();
+                await fetchCart();
                 return true;
             }
             return false;
         } catch (err) {
+            console.error("Error:", err);
             return false;
         }
     };

@@ -6,18 +6,14 @@ import { requester } from "../../utils/Requester/Requester";
 
 export const SidebarMenu = ({ isOpen, onClose, gender }) => {
     const [categoriesTree, setCategoriesTree] = useState(null);
-    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         const fetchCategories = async () => {
-            setLoading(true);
             try {
                 const response = await requester.get("/api/categories-tree/");
                 setCategoriesTree(response.data);
             } catch (error) {
                 console.error("Ошибка при загрузке дерева категорий:", error);
-            } finally {
-                setLoading(false);
             }
         };
 
@@ -41,8 +37,6 @@ export const SidebarMenu = ({ isOpen, onClose, gender }) => {
                 </div>
 
                 <div className={styles.sidebarContent}>
-                    {loading && <p>Жүктөлүүдө...</p>}
-
                     {genderData &&
                         Object.entries(genderData).map(([master, subs]) => (
                             <div key={master} className={styles.categoryBlock}>

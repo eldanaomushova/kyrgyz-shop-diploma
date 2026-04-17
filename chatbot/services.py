@@ -132,7 +132,7 @@ def format_with_buttons(text):
     html_content = markdown.markdown(text)
 
     if id:
-        frontend_url = os.environ.get('FRONTEND_URL', 'https://diploma-project-788181191989.us-central1.run.app')
+        frontend_url = os.environ.get('FRONTEND_URL', 'https://kyrgyz-shop-diploma.vercel.app')
         button_html = f"""
         <div style="margin-top: 10px; display: flex; gap: 8px;">
             <a href="{frontend_url}/product/{id}" 

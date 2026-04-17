@@ -182,7 +182,6 @@ export const ChatbotModule = () => {
         };
 
         recognition.onerror = (event) => {
-            console.error("STT Error:", event.error);
             setIsListening(false);
         };
 

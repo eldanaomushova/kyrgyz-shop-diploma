@@ -6,7 +6,7 @@ from rest_framework.decorators import api_view, permission_classes, authenticati
 load_dotenv()
 
 
-@api_view(['GET', 'POST']) 
+@api_view(['GET', 'POST'])
 def cart_operations(request):
     if request.method == 'GET':
         items = CartItem.objects.all()
@@ -23,21 +23,37 @@ def cart_operations(request):
 
     if request.method == 'POST':
         try:
-            p_id = request.data.get('id')
-            product = Product.objects.get(id=p_id)
+            product_id = request.data.get('id') or request.data.get('product_id')
+            if not product_id:
+                return Response({"error": "Product ID is required"}, status=400)
+                
+            product = Product.objects.get(id=product_id)
             
             cart_item, created = CartItem.objects.get_or_create(product=product)
             if not created:
                 cart_item.quantity += 1
                 cart_item.save()
                 
-            return Response({"message": "Added"}, status=status.HTTP_201_CREATED)
+            return Response({
+                "message": "Added to cart",
+                "item": {
+                    "id": cart_item.product.id,
+                    "quantity": cart_item.quantity,
+                    "productDisplayName": cart_item.product.productDisplayName,
+                    "price": cart_item.product.price
+                }
+            }, status=status.HTTP_201_CREATED)
+            
         except Product.DoesNotExist:
             return Response({"error": "Product not found"}, status=404)
         except Exception as e:
-            print(f"CRASH LOG: {e}") 
+            print(f"CRASH LOG: {e}")
             return Response({"error": str(e)}, status=500)
-        
+
+
+
+
+
 @api_view(['DELETE', 'PATCH'])
 def cart_item_detail(request, pk):
     print(f"DEBUG: Received request for id: {pk}") 

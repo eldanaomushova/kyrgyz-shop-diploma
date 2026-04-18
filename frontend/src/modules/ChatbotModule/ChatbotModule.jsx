@@ -3,6 +3,15 @@ import { useCart } from "../../modules/CartProvider/CartProvider";
 import { useState, useEffect, useRef } from "react";
 import styles from "./ChabotModule.module.scss";
 import { requester } from "../../utils/Requester/Requester";
+import {
+    Mic,
+    MicOff,
+    Volume2,
+    VolumeX,
+    Send,
+    MessageCircle,
+    X,
+} from "lucide-react";
 
 export const ChatbotModule = () => {
     const [open, setOpen] = useState(false);
@@ -10,9 +19,20 @@ export const ChatbotModule = () => {
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [isListening, setIsListening] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
+    const [isSpeaking, setIsSpeaking] = useState(false);
 
     const chatEndRef = useRef(null);
     const { addToCart } = useCart();
+
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth <= 768);
+        };
+        checkMobile();
+        window.addEventListener("resize", checkMobile);
+        return () => window.removeEventListener("resize", checkMobile);
+    }, []);
 
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -118,12 +138,20 @@ export const ChatbotModule = () => {
         cleanText = cleanText.replace(/\d+/g, (match) => toKyrgyzNumber(match));
 
         if (cleanText.trim().length > 0) {
+            setIsSpeaking(true);
             const utterance = new SpeechSynthesisUtterance(cleanText);
             utterance.lang = "ru-RU";
             utterance.rate = 0.8;
             utterance.pitch = 1.0;
+            utterance.onend = () => setIsSpeaking(false);
+            utterance.onerror = () => setIsSpeaking(false);
             window.speechSynthesis.speak(utterance);
         }
+    };
+
+    const stopSpeaking = () => {
+        window.speechSynthesis.cancel();
+        setIsSpeaking(false);
     };
 
     const sendMessage = async () => {
@@ -196,27 +224,36 @@ export const ChatbotModule = () => {
                     onClick={() => setOpen(true)}
                     className={styles.openButton}
                 >
-                    💬 Жардам
+                    <MessageCircle size={20} />
+                    <span>Жардам</span>
                 </button>
             )}
 
             {open && (
-                <div className={styles.chatWindow}>
+                <div
+                    className={`${styles.chatWindow} ${isMobile ? styles.mobile : ""}`}
+                >
                     <div className={styles.header}>
-                        <strong>🛍️ Ассистент</strong>
+                        <div className={styles.headerLeft}>
+                            <MessageCircle size={20} />
+                            <strong>🛍️ Ассистент</strong>
+                        </div>
                         <button
                             onClick={() => setOpen(false)}
                             className={styles.closeButton}
                         >
-                            ✕
+                            <X size={20} />
                         </button>
                     </div>
 
                     <div className={styles.messageArea}>
                         {messages.length === 0 && (
-                            <p className={styles.welcomeText}>
-                                Кандай жардам бере алам?
-                            </p>
+                            <div className={styles.welcomeContainer}>
+                                <MessageCircle size={48} strokeWidth={1.5} />
+                                <p className={styles.welcomeText}>
+                                    Кандай жардам бере алам?
+                                </p>
+                            </div>
                         )}
                         {messages.map((m, i) => (
                             <div
@@ -248,16 +285,23 @@ export const ChatbotModule = () => {
                                             className={styles.inlineTtsButton}
                                             title="Угуу"
                                         >
-                                            🔊
+                                            <Volume2 size={14} />
                                         </button>
                                     )}
                                 </div>
                             </div>
                         ))}
                         {isLoading && (
-                            <p className={styles.loadingText}>
-                                Ойлонуп жатат...
-                            </p>
+                            <div className={styles.loadingContainer}>
+                                <div className={styles.typingIndicator}>
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                </div>
+                                <p className={styles.loadingText}>
+                                    Ойлонуп жатат...
+                                </p>
+                            </div>
                         )}
                         <div ref={chatEndRef} />
                     </div>
@@ -266,8 +310,15 @@ export const ChatbotModule = () => {
                         <button
                             onClick={startListening}
                             className={`${styles.micButton} ${isListening ? styles.active : ""}`}
+                            title={
+                                isListening ? "Угуу токтотуу" : "Үн менен жазуу"
+                            }
                         >
-                            {isListening ? "🛑" : "🎤"}
+                            {isListening ? (
+                                <MicOff size={18} />
+                            ) : (
+                                <Mic size={18} />
+                            )}
                         </button>
                         <input
                             value={input}
@@ -280,8 +331,9 @@ export const ChatbotModule = () => {
                         <button
                             onClick={sendMessage}
                             className={styles.sendButton}
+                            disabled={!input.trim()}
                         >
-                            Жөнөтүү
+                            <Send size={18} />
                         </button>
                     </div>
                 </div>

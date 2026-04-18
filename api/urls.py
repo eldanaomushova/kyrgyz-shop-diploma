@@ -26,6 +26,8 @@ urlpatterns = [
     path('virtual-try-on/extract-garment/', views.extract_garment_view, name='extract_garment'),
     path('virtual-try-on/image-try-on/', views.image_try_on, name='image-try-on'),
     path('virtual-try-on/pose-estimation/', views.pose_estimation_view, name='pose-estimation'),
+    
+    path('products/search/', views.search_products, name='product-search'),
 ]
 
 if settings.DEBUG:

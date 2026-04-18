@@ -12,7 +12,6 @@ export const CartProvider = ({ children }) => {
             setCart(response.data);
             return response.data;
         } catch (err) {
-            console.error("Errorfetching cart:", err);
             setCart([]);
             return [];
         }
@@ -38,8 +37,7 @@ export const CartProvider = ({ children }) => {
                 quantity: newQuantity,
             });
         } catch (err) {
-            console.error("Error updating quantity:", err);
-            await fetchCart(); // Revert on error
+            await fetchCart();
         }
     };
 
@@ -49,35 +47,21 @@ export const CartProvider = ({ children }) => {
         try {
             await requester.delete(`/api/cart/${productId}/`);
         } catch (err) {
-            console.error("Error removing from cart:", err);
-            await fetchCart(); // Revert on error
+            await fetchCart();
         }
     };
 
     const addToCart = async (product) => {
-        console.log("Adding product to cart:", product);
         try {
             const response = await requester.post("/api/cart/", {
                 id: product.id,
             });
-
-            console.log("Response status:", response.status);
-            console.log("Response data:", response.data);
-
             if (response.status === 200 || response.status === 201) {
                 await fetchCart();
                 return true;
             }
             return false;
         } catch (err) {
-            console.error("Error adding to cart:", err);
-            if (err.response) {
-                console.error(
-                    "Server responded with:",
-                    err.response.status,
-                    err.response.data
-                );
-            }
             return false;
         }
     };
@@ -90,7 +74,6 @@ export const CartProvider = ({ children }) => {
             );
             setCart([]);
         } catch (err) {
-            console.error("Error clearing cart:", err);
             await fetchCart();
         }
     };

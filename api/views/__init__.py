@@ -18,6 +18,8 @@ from .payment_views import initiate_payment, payment_status
 
 from .recommendation_views import clothing_questionnaire
 
+from .search_product_views import search_products
+
 __all__ = [
     'image_try_on',
     'pose_estimation_view',
@@ -40,4 +42,6 @@ __all__ = [
     'payment_status',
     
     'clothing_questionnaire',
+    
+    'search_products',
 ]

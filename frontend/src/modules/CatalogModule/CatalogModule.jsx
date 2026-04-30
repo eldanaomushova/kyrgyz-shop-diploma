@@ -4,6 +4,7 @@ import styles from "./CatalogModule.module.scss";
 import { Pagination } from "../../ui/Pagination/Pagination";
 import { Footer } from "../../modules/Footer/components/Footer";
 import { requester } from "../../utils/Requester/Requester";
+import { Typography } from "../../ui/Typography/Typography";
 
 export const CatalogModule = () => {
     const [products, setProducts] = useState([]);
@@ -80,7 +81,9 @@ export const CatalogModule = () => {
                 <nav className={styles.breadcrumb}>
                     <span>{gender}</span> {sub && ` / ${sub}`}
                 </nav>
-                <h1 className={styles.title}>{type || sub || "Каталог"}</h1>
+                <Typography variant="h1" className={styles.title}>
+                    {type || sub || "Каталог"}
+                </Typography>
             </header>
 
             {loading ? (
@@ -106,15 +109,24 @@ export const CatalogModule = () => {
                                         />
                                     </div>
                                     <div className={styles.productInfo}>
-                                        <h3 className={styles.productName}>
+                                        <Typography
+                                            variant="h6"
+                                            className={styles.productName}
+                                        >
                                             {product.productDisplayName}
-                                        </h3>
-                                        <p className={styles.price}>
+                                        </Typography>
+                                        <Typography
+                                            variant="p"
+                                            className={styles.price}
+                                        >
                                             {product.price} сом
-                                        </p>
-                                        <p className={styles.articleType}>
+                                        </Typography>
+                                        <Typography
+                                            variant="p"
+                                            className={styles.articleType}
+                                        >
                                             {product.articleType}
-                                        </p>
+                                        </Typography>
                                     </div>
                                 </Link>
                             ))

@@ -62,10 +62,13 @@
 
     .productInfo {
         .productName {
-            font-size: 12px;
-            font-weight: 400;
+            height: 50px;
             margin-bottom: 5px;
             text-transform: capitalize;
+            @media (max-width: 768px) {
+                font-size: 18px;
+                height: 66px;
+            }
         }
 
         .price {

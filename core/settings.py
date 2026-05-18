@@ -40,6 +40,8 @@ CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:8000', 
     'https://run.app'
     'https://kyrgyz-shop-diploma-production.up.railway.app',
+    'https://*.railway.app',
+    'https://*.up.railway.app',
 ]
 ALLOWED_HOSTS = ['*']
 

@@ -65,10 +65,7 @@ export const ProductDetailModule = () => {
                 );
                 setProduct(response.data);
             } catch (error) {
-                console.error("Error fetching product:", error);
-
                 if (error.response) {
-                    // Server responded with error status
                     if (error.response.status === 404) {
                         setError("Товар не найден");
                     } else if (error.response.status === 400) {
@@ -77,12 +74,10 @@ export const ProductDetailModule = () => {
                         setError("Ошибка при загрузке товара");
                     }
                 } else if (error.request) {
-                    // Request was made but no response
                     setError(
                         "Ошибка соединения с сервером. Проверьте интернет-соединение."
                     );
                 } else {
-                    // Something else happened
                     setError("Произошла ошибка при загрузке данных");
                 }
             } finally {
@@ -93,7 +88,6 @@ export const ProductDetailModule = () => {
         fetchProduct();
     }, [id]);
 
-    // Redirect to home if no valid id
     useEffect(() => {
         if (!id || id === "undefined" || id === "null" || isNaN(parseInt(id))) {
             const timer = setTimeout(() => {

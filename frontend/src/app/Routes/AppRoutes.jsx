@@ -9,6 +9,7 @@ import { SigninPage } from "../../pages/AuthPage/SigninPage";
 import { SignupPage } from "../../pages/AuthPage/SignupPage";
 import VirtualTryOnPage from "../../pages/VirtualTryOnPage/VirtualTryOnPage";
 import ArTryOnPage from "../../pages/ArTryOnPage/ArTryOnPage";
+import { DesignClothesPage } from "../../pages/DesignClothesPage/DesignClothesPage";
 
 const ArTryOnPageWrapper = () => {
     const { state } = useLocation();
@@ -51,6 +52,10 @@ export const AppRouter = createBrowserRouter([
             {
                 path: PATH.arTryOn,
                 element: <ArTryOnPageWrapper />,
+            },
+            {
+                path: PATH.designClothes,
+                element: <DesignClothesPage />,
             },
         ],
     },

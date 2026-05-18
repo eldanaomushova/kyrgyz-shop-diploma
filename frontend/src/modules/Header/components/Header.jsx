@@ -1,7 +1,15 @@
 import { useState, useEffect } from "react";
 import styles from "./Header.module.scss";
 import { Button } from "../../../ui/Buttons/Button";
-import { ShoppingBag, User, Search, Menu, X, Sparkles } from "lucide-react";
+import {
+    ShoppingBag,
+    User,
+    Search,
+    Menu,
+    X,
+    Sparkles,
+    Pencil,
+} from "lucide-react";
 import { SidebarMenu } from "../../../ui/SidebarMenu/SidebarMenu";
 import { SearchPanel } from "../../../ui/SearchPanel/SearchPanel";
 import { useNavigate } from "react-router-dom";
@@ -121,7 +129,22 @@ export const Header = () => {
                                             }
                                         >
                                             <Sparkles size={18} />
-                                            Virtual Try-On
+                                            Виртуалдык кийүү
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button
+                                            onClick={() =>
+                                                handleNavigation(
+                                                    PATH.designClothes
+                                                )
+                                            }
+                                            className={
+                                                styles.virtualTryOnDesktop
+                                            }
+                                        >
+                                            <Pencil size={18} />
+                                            Кийимди дизайндоо
                                         </button>
                                     </li>
                                 </ul>

@@ -1,0 +1,432 @@
+.wrapper {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f0f4ff 0%, #faf0ff 100%);
+    padding: 24px 16px;
+}
+
+.container {
+    max-width: 1280px;
+    margin: 0 auto;
+}
+
+// ── Header ──────────────────────────────────────────────────────────────────
+.pageHeader {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 24px;
+}
+
+.iconCircle {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #7c3aed, #4f46e5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);
+    color: #fff;
+}
+
+.title {
+    margin: 0 !important;
+    font-size: 22px !important;
+    font-weight: 700 !important;
+    color: #1e1b4b !important;
+    letter-spacing: -0.3px;
+}
+
+.subtitle {
+    margin: 2px 0 0 !important;
+    font-size: 13px !important;
+    color: #6b7280 !important;
+}
+
+// ── Layout ───────────────────────────────────────────────────────────────────
+.editorLayout {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+
+// ── Sidebar toolbar ──────────────────────────────────────────────────────────
+.toolbar {
+    width: 148px;
+    flex-shrink: 0;
+    background: #fff;
+    border-radius: 16px;
+    padding: 16px 12px;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.toolGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.toolLabel {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #9ca3af;
+    margin-bottom: 2px;
+}
+
+.toolBtn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    width: 100%;
+    padding: 8px 10px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    background: #f9fafb;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    color: #4b5563;
+    transition: all 0.15s;
+
+    &:hover {
+        background: #f0f0ff;
+        border-color: #c4b5fd;
+    }
+}
+
+.toolBtnActive {
+    background: #ede9fe !important;
+    border-color: #7c3aed !important;
+    color: #7c3aed !important;
+}
+
+// Brush size
+.sizeRow {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.sizeBtn {
+    width: 26px;
+    height: 26px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    background: #f3f4f6;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    color: #374151;
+    flex-shrink: 0;
+
+    &:hover {
+        background: #e5e7eb;
+    }
+}
+
+.sizeDisplay {
+    flex: 1;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.sizePreview {
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f9fafb;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+}
+
+.sizeDot {
+    border-radius: 50%;
+    transition:
+        width 0.15s,
+        height 0.15s,
+        background 0.15s;
+}
+
+// Colors
+.colorGrid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5px;
+}
+
+.colorBtn {
+    width: 24px;
+    height: 24px;
+    border-radius: 5px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    padding: 0;
+    transition:
+        transform 0.1s,
+        border-color 0.1s;
+
+    &:hover {
+        transform: scale(1.15);
+    }
+}
+
+.colorBtnActive {
+    border-color: #7c3aed !important;
+    box-shadow: 0 0 0 1px #fff inset;
+}
+
+.customColorRow {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 2px;
+    color: #9ca3af;
+}
+
+.colorPicker {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    background: none;
+}
+
+.colorHex {
+    font-size: 10px;
+    color: #6b7280;
+    font-family: monospace;
+}
+
+// Action buttons
+.actionBtn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 7px 10px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    background: #f9fafb;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    color: #374151;
+    transition: all 0.15s;
+
+    &:hover {
+        background: #f3f4f6;
+        border-color: #d1d5db;
+    }
+}
+
+// ── Canvas area ──────────────────────────────────────────────────────────────
+.canvasArea {
+    flex: 1;
+    min-width: 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.canvas {
+    width: 100%;
+    display: block;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+    touch-action: none;
+    background: #fafaf8;
+}
+
+.cursorPen {
+    cursor: crosshair;
+}
+
+.cursorEraser {
+    cursor: cell;
+}
+
+// Submit row
+.submitRow {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.primaryBtn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition:
+        opacity 0.15s,
+        transform 0.1s;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+
+    &:hover:not(:disabled) {
+        opacity: 0.88;
+        transform: translateY(-1px);
+    }
+
+    &:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+        transform: none;
+    }
+}
+
+.btnAI {
+    background: linear-gradient(135deg, #7c3aed, #6d28d9);
+}
+
+.btnSend {
+    background: linear-gradient(135deg, #0f766e, #0d9488);
+}
+
+// Status banners
+.statusBanner {
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.statusSuccess {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.statusError {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+// ── AI result panel ──────────────────────────────────────────────────────────
+.resultPanel {
+    width: 240px;
+    flex-shrink: 0;
+    background: #fff;
+    border-radius: 16px;
+    padding: 16px 14px;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
+    align-self: flex-start;
+}
+
+.resultTitle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 0 12px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #1e1b4b;
+}
+
+// Loading dots
+.loadingDots {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    padding: 16px 0;
+
+    span {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #7c3aed;
+        animation: dotBounce 1.2s infinite ease-in-out;
+
+        &:nth-child(1) {
+            animation-delay: 0s;
+        }
+        &:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        &:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+    }
+}
+
+@keyframes dotBounce {
+    0%,
+    80%,
+    100% {
+        transform: scale(0.5);
+        opacity: 0.4;
+    }
+    40% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.resultError {
+    font-size: 12px;
+    color: #dc2626;
+    margin: 0;
+}
+
+.garmentChip {
+    display: inline-block;
+    background: #ede9fe;
+    color: #6d28d9;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.resultDesc {
+    font-size: 12px;
+    color: #4b5563;
+    line-height: 1.6;
+    margin: 0 0 10px;
+}
+
+.promptBox {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 8px 10px;
+}
+
+.promptLabel {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+}
+
+.promptText {
+    font-size: 11px;
+    color: #374151;
+    line-height: 1.5;
+    margin: 0;
+    font-style: italic;
+}

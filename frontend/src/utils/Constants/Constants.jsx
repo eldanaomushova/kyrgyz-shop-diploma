@@ -12,6 +12,7 @@ export const PATH = {
     signup: "/signup",
     virtualTryOn: "/virtual-try-on",
     arTryOn: "/ar-tryon/:id",
+    designClothes: "/design-clothes",
 };
 
 export const NavLinks = [];

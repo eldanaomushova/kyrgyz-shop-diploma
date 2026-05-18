@@ -30,7 +30,8 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-#7ad_bwn^)...')
 
-DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+DEBUG = True
+
 
 CSRF_TRUSTED_ORIGINS = [
     'https://diploma-project-788181191989.us-central1.run.app',
@@ -107,21 +108,28 @@ WSGI_APPLICATION = 'core.wsgi.application'
 
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
-if DATABASE_URL:
-    DATABASES = {
-        'default': dj_database_url.parse(DATABASE_URL)
+# if DATABASE_URL:
+#     DATABASES = {
+#         'default': dj_database_url.parse(DATABASE_URL)
+#     }
+# else:
+#     DATABASES = {
+#         'default': {
+#             'ENGINE': 'django.db.backends.postgresql',
+#             'NAME': os.environ.get('DB_NAME', 'diploma'),
+#             'USER': os.environ.get('DB_USER', 'eldana'),
+#             'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+#             'HOST': os.environ.get('DB_HOST', '127.0.0.1'),
+#             'PORT': os.environ.get('DB_PORT', '5432'),
+#         }
+#     }
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.environ.get('DB_NAME', 'diploma'),
-            'USER': os.environ.get('DB_USER', 'eldana'),
-            'PASSWORD': os.environ.get('DB_PASSWORD', ''),
-            'HOST': os.environ.get('DB_HOST', '127.0.0.1'),
-            'PORT': os.environ.get('DB_PORT', '5432'),
-        }
-    }
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators

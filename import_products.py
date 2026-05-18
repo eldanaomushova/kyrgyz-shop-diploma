@@ -1,15 +1,10 @@
 import csv
 import os
-import psycopg2
+import sqlite3
 import traceback
 
-DB_CONFIG = {
-    'dbname': 'diploma',
-    'user': 'eldana',
-    'password': '412054Ma.',
-    'host': '127.0.0.1',
-    'port': 9470,
-}
+# Теперь используем файл базы данных, который создал Django
+DB_FILE = 'db.sqlite3'
 
 def import_products():
     csv_path = 'products.csv'
@@ -19,24 +14,22 @@ def import_products():
         return
     
     try:
-        conn = psycopg2.connect(**DB_CONFIG)
+        # Подключаемся к локальной базе SQLite
+        conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
-        print("✅ Connected to PostgreSQL")
+        print("✅ Connected to SQLite Database")
         
-        # Проверяем структуру таблицы
-        cursor.execute("""
-            SELECT column_name, data_type 
-            FROM information_schema.columns 
-            WHERE table_name = 'api_product'
-            ORDER BY ordinal_position
-        """)
+        # Проверяем структуру таблицы в SQLite
+        cursor.execute("PRAGMA table_info(api_product)")
         columns = cursor.fetchall()
         print("\n📋 Table structure:")
         for col in columns:
-            print(f"   {col[0]} ({col[1]})")
+            print(f"   {col[1]} ({col[2]})")
         
-        # Очищаем таблицу
-        cursor.execute("TRUNCATE TABLE api_product RESTART IDENTITY CASCADE")
+        # Очищаем таблицу (В SQLite нет TRUNCATE, используем DELETE)
+        cursor.execute("DELETE FROM api_product")
+        # Сбрасываем автоинкремент счетчика ID
+        cursor.execute("DELETE FROM sqlite_sequence WHERE name='api_product'")
         conn.commit()
         print("\n✅ Cleared existing data")
         
@@ -45,14 +38,12 @@ def import_products():
         
         count = 0
         errors = []
-        test_mode_announced = False
         
         with open(csv_path, 'r', encoding='utf-8') as file:
             reader = csv.DictReader(file)
             
             for row_num, row in enumerate(reader, start=2):
                 try:
-                    # Пропускаем первые 5 строк для теста
                     # Обработка года
                     year_value = None
                     year_str = row.get('year', '').strip()
@@ -96,8 +87,7 @@ def import_products():
                         row.get('figure') or None,
                     )
                     
-                    # Выполняем вставку
-                    # Выполняем вставку
+                    # Выполняем вставку (Заменили %s на ?)
                     cursor.execute('''
                         INSERT INTO api_product (
                             id, 
@@ -116,7 +106,7 @@ def import_products():
                             brand,
                             "Silhouette", 
                             figure
-                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ''', data)
                     count += 1
                     
@@ -130,8 +120,6 @@ def import_products():
                     print(f"❌ {error_msg}")
                     if count < 10:  
                         print(f"   Row data: {row}")
-                        print(f"   Data tuple: {data}")
-                        traceback.print_exc()
                     conn.rollback()
                     continue
             
@@ -148,10 +136,11 @@ def import_products():
             for error in errors[:10]:
                 print(f"  - {error}")
         
-        # Проверка
+        # Проверка общего количества
         cursor.execute("SELECT COUNT(*) FROM api_product")
         total = cursor.fetchone()[0]
         
+        # Проверка заполненности цветов
         cursor.execute("SELECT COUNT(*) FROM api_product WHERE color IS NOT NULL AND color != ''")
         with_color = cursor.fetchone()[0]
         
@@ -159,21 +148,22 @@ def import_products():
         print(f"VERIFICATION")
         print(f"{'='*50}")
         print(f"Total products in DB: {total}")
-        print(f"With color: {with_color} ({with_color/total*100:.1f}%)")
+        if total > 0:
+            print(f"With color: {with_color} ({with_color/total*100:.1f}%)")
         
         # Проверка цвета Боз
         cursor.execute("SELECT COUNT(*) FROM api_product WHERE color = 'Боз'")
         gray_count = cursor.fetchone()[0]
         print(f"Products with 'Боз': {gray_count}")
         
-        # Примеры
+        # Примеры импортированных строк
         if total > 0:
             print(f"\n📝 Sample products:")
             cursor.execute("SELECT id, \"productDisplayName\", color, price FROM api_product LIMIT 5")
             for row in cursor.fetchall():
                 print(f"  ID: {row[0]} | {row[1][:50]} | Color: '{row[2]}' | Price: {row[3]}")
             
-            # Показываем все уникальные цвета
+            # Показываем уникальные цвета
             cursor.execute("""
                 SELECT color, COUNT(*) 
                 FROM api_product 

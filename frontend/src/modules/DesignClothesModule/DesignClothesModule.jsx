@@ -12,6 +12,7 @@ import {
     Minus,
     Plus,
     RotateCcw,
+    ImagePlus,
 } from "lucide-react";
 import { requester } from "../../utils/Requester/Requester";
 
@@ -54,35 +55,21 @@ const getCookie = (name) => {
     return cookieValue;
 };
 
-async function analyzeSketchWithGemini(canvasElement) {
-    const blob = await new Promise((resolve) =>
-        canvasElement.toBlob(resolve, "image/png")
-    );
-    if (!blob) throw new Error("Canvas rendering failed");
-    const formData = new FormData();
-    formData.append("cloth_image", blob, "sketch.png");
-    const response = await requester.post("/api/generate-design/", formData, {
-        headers: {
-            "X-CSRFToken": getCookie("csrftoken"),
-            "Content-Type": "multipart/form-data",
-        },
-    });
-    return response.data;
-}
-
 export const DesignClothesModule = () => {
     const canvasRef = useRef(null);
     const lastPos = useRef(null);
+    const referenceInputRef = useRef(null);
 
     const [isDrawing, setIsDrawing] = useState(false);
     const [tool, setTool] = useState("pen");
     const [color, setColor] = useState("#1a1a2e");
     const [brushIndex, setBrushIndex] = useState(1);
     const [history, setHistory] = useState([]);
-    const [analysisResult, setAnalysisResult] = useState(null);
-    const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitStatus, setSubmitStatus] = useState(null);
+    const [referenceImage, setReferenceImage] = useState(null);
+    const [generatedImage, setGeneratedImage] = useState(null);
+    const [isGenerating, setIsGenerating] = useState(false);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -169,8 +156,8 @@ export const DesignClothesModule = () => {
         const ctx = canvas.getContext("2d");
         ctx.fillStyle = "#fafaf8";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        setAnalysisResult(null);
         setSubmitStatus(null);
+        setGeneratedImage(null);
         saveHistory();
     };
 
@@ -182,19 +169,37 @@ export const DesignClothesModule = () => {
         link.click();
     };
 
-    const analyzeWithAI = async () => {
-        setIsAnalyzing(true);
-        setAnalysisResult(null);
-        setSubmitStatus(null);
+    const generateClothImage = async () => {
+        setIsGenerating(true);
+        setGeneratedImage(null);
         try {
-            const result = await analyzeSketchWithGemini(canvasRef.current);
-            setAnalysisResult(result);
-        } catch (error) {
-            setAnalysisResult({
-                error: "AI анализинде ката кетти. Кайра аракет кылыңыз.",
-            });
+            const canvas = canvasRef.current;
+            const sketchBlob = await new Promise((res) =>
+                canvas.toBlob(res, "image/png")
+            );
+            const formData = new FormData();
+            formData.append("sketch", sketchBlob, "sketch.png");
+            if (referenceImage) {
+                formData.append("reference_image", referenceImage);
+            }
+            const response = await requester.post(
+                "/api/generate-cloth-image/",
+                formData,
+                {
+                    headers: {
+                        "X-CSRFToken": getCookie("csrftoken"),
+                        "Content-Type": "multipart/form-data",
+                    },
+                    timeout: 60000,
+                }
+            );
+            if (response.data?.image_url) {
+                setGeneratedImage(response.data.image_url);
+            }
+        } catch (err) {
+            console.error("Image generation failed:", err);
         } finally {
-            setIsAnalyzing(false);
+            setIsGenerating(false);
         }
     };
 
@@ -208,12 +213,10 @@ export const DesignClothesModule = () => {
                 canvas.toBlob(res, "image/png")
             );
             const formData = new FormData();
-            formData.append("cloth_image", blob, "design.png");
-            if (analysisResult?.imagePrompt) {
-                formData.append("prompt", analysisResult.imagePrompt);
-            }
-            await requester.post(
-                "/api/virtual-try-on/image-try-on/",
+            formData.append("sketch", blob, "design.png");
+
+            const response = await requester.post(
+                "/api/generate-cloth-image/",
                 formData,
                 {
                     headers: {
@@ -224,6 +227,11 @@ export const DesignClothesModule = () => {
                     signal: abortController.signal,
                 }
             );
+
+            if (response.data?.image_url) {
+                setGeneratedImage(response.data.image_url);
+            }
+
             setSubmitStatus("success");
         } catch {
             setSubmitStatus("error");
@@ -232,11 +240,7 @@ export const DesignClothesModule = () => {
         }
     };
 
-    const canSubmit =
-        analysisResult &&
-        !analysisResult.error &&
-        !isAnalyzing &&
-        !isSubmitting;
+    const canSubmit = !isGenerating && !isSubmitting;
 
     return (
         <main className={styles.wrapper}>
@@ -301,7 +305,6 @@ export const DesignClothesModule = () => {
                                     <Plus size={13} />
                                 </button>
                             </div>
-                            {/* sizeDot uses inline style only for dynamic width/height/color — this is valid */}
                             <div className={styles.sizePreview}>
                                 <div
                                     className={styles.sizeDot}
@@ -341,6 +344,38 @@ export const DesignClothesModule = () => {
                         </div>
 
                         <div className={styles.toolGroup}>
+                            <span className={styles.toolLabel}>Кездеме</span>
+                            <input
+                                ref={referenceInputRef}
+                                type="file"
+                                accept="image/*"
+                                style={{ display: "none" }}
+                                onChange={(e) =>
+                                    setReferenceImage(e.target.files[0] || null)
+                                }
+                            />
+                            <button
+                                className={styles.actionBtn}
+                                onClick={() =>
+                                    referenceInputRef.current.click()
+                                }
+                            >
+                                <ImagePlus size={14} />
+                                {referenceImage
+                                    ? referenceImage.name
+                                    : "Сүрөт кошуу"}
+                            </button>
+                            {referenceImage && (
+                                <button
+                                    className={styles.actionBtn}
+                                    onClick={() => setReferenceImage(null)}
+                                >
+                                    <Trash2 size={14} /> Өчүрүү
+                                </button>
+                            )}
+                        </div>
+
+                        <div className={styles.toolGroup}>
                             <span className={styles.toolLabel}>Аракеттер</span>
                             <button className={styles.actionBtn} onClick={undo}>
                                 <RotateCcw size={14} /> Артка
@@ -360,7 +395,6 @@ export const DesignClothesModule = () => {
                         </div>
                     </aside>
 
-                    {/* Canvas area */}
                     <div className={styles.canvasArea}>
                         <canvas
                             ref={canvasRef}
@@ -378,15 +412,16 @@ export const DesignClothesModule = () => {
 
                         <div className={styles.submitRow}>
                             <button
-                                className={`${styles.primaryBtn} ${styles.btnAI}`}
-                                onClick={analyzeWithAI}
-                                disabled={isAnalyzing || isSubmitting}
+                                className={`${styles.primaryBtn} ${styles.btnGenerate}`}
+                                onClick={generateClothImage}
+                                disabled={!canSubmit || isGenerating}
                             >
                                 <Wand2 size={15} />
-                                {isAnalyzing
-                                    ? "Анализдөө..."
-                                    : "AI менен анализдөө"}
+                                {isGenerating
+                                    ? "Жаратылууда..."
+                                    : "Сүрөт жаратуу"}
                             </button>
+
                             <button
                                 className={`${styles.primaryBtn} ${styles.btnSend}`}
                                 onClick={submitToBackend}
@@ -403,60 +438,37 @@ export const DesignClothesModule = () => {
                             <div
                                 className={`${styles.statusBanner} ${styles.statusSuccess}`}
                             >
-                                ✅ Дизайн ийгиликтүү жөнөтүлдү!
+                                Дизайн ийгиликтүү жөнөтүлдү!
                             </div>
                         )}
                         {submitStatus === "error" && (
                             <div
                                 className={`${styles.statusBanner} ${styles.statusError}`}
                             >
-                                ❌ Жөнөтүүдө ката кетти. Кайра аракет кылыңыз.
+                                Жөнөтүүдө ката кетти. Кайра аракет кылыңыз.
+                            </div>
+                        )}
+
+                        {generatedImage && (
+                            <div className={styles.generatedResult}>
+                                <h3 className={styles.resultTitle}>
+                                    Жаратылган кийим
+                                </h3>
+                                <img
+                                    src={generatedImage}
+                                    alt="Generated garment"
+                                    className={styles.generatedImg}
+                                />
+                                <a
+                                    href={generatedImage}
+                                    download="generated-garment.png"
+                                    className={styles.actionBtn}
+                                >
+                                    <Download size={14} /> Жүктөө
+                                </a>
                             </div>
                         )}
                     </div>
-
-                    {/* AI result panel */}
-                    {(isAnalyzing || analysisResult) && (
-                        <aside className={styles.resultPanel}>
-                            <h3 className={styles.resultTitle}>
-                                <Wand2 size={14} /> AI Анализи
-                            </h3>
-                            {isAnalyzing && (
-                                <div className={styles.loadingDots}>
-                                    <span />
-                                    <span />
-                                    <span />
-                                </div>
-                            )}
-                            {!isAnalyzing && analysisResult?.error && (
-                                <p className={styles.resultError}>
-                                    {analysisResult.error}
-                                </p>
-                            )}
-                            {!isAnalyzing &&
-                                analysisResult &&
-                                !analysisResult.error && (
-                                    <>
-                                        <span className={styles.garmentChip}>
-                                            {analysisResult.garmentType}
-                                        </span>
-                                        <p className={styles.resultDesc}>
-                                            {analysisResult.description}
-                                        </p>
-                                        <div className={styles.promptBox}>
-                                            <span
-                                                className={styles.promptLabel}
-                                            >
-                                                Image Prompt
-                                            </span>
-                                            <p className={styles.promptText}>
-                                                {analysisResult.imagePrompt}
-                                            </p>
-                                        </div>
-                                    </>
-                                )}
-                        </aside>
-                    )}
                 </div>
             </section>
         </main>

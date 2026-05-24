@@ -17,6 +17,7 @@ const extractGarmentWithVertexAI = async (imageFile) => {
                 headers: {
                     "Content-Type": "multipart/form-data",
                 },
+                timeout: 180000,
             }
         );
 

@@ -20,7 +20,7 @@ from .recommendation_views import clothing_questionnaire
 
 from .search_product_views import search_products
 
-from .designing_views import generate_design
+from .designing_views import generate_cloth_image
 __all__ = [
     'image_try_on',
     'pose_estimation_view',
@@ -46,5 +46,5 @@ __all__ = [
     
     'search_products',
     
-    'generate_design',
+    'generate_cloth_image',
 ]

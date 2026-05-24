@@ -1,8 +1,6 @@
 import os
-import json
+import base64
 import logging
-from PIL import Image
-from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -12,60 +10,110 @@ from google.genai import types
 
 logger = logging.getLogger(__name__)
 
-client = genai.Client()
+def get_vertex_client():
+    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+        'google_key.json'
+    )
+    return genai.Client(
+        vertexai=True,
+        project='my-second-project-497114',
+        location='us-central1'
+    )
 
-GEMINI_IMAGE_MODEL = 'gemini-2.5-flash' 
 
 @csrf_exempt
 @api_view(['POST'])
 @parser_classes([MultiPartParser, FormParser])
-def generate_design(request):
+def generate_cloth_image(request):
     try:
-        image_file = request.FILES.get('cloth_image')
-        if not image_file:
-            return Response(
-                {"error": "No image file provided under 'cloth_image'"}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        sketch_file = request.FILES.get('sketch') or request.FILES.get('cloth_image')
+        reference_file = request.FILES.get('reference_image')
+        
+        if not sketch_file:
+            return Response({"error": "Sketch is required"}, status=400)
 
-        try:
-            pil_image = Image.open(image_file)
-        except Exception as img_err:
-            logger.error(f"Failed to open image file: {str(img_err)}")
-            return Response(
-                {"error": "Invalid image file format."}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        client = get_vertex_client()
+        sketch_bytes = sketch_file.read()
+        
+        if reference_file:
+            ref_bytes = reference_file.read()
+            
+            prompt = """Using the first image as the SILHOUETTE/SKETCH and the second image as the COLOR + FABRIC reference, create a photorealistic garment that:
+            1. EXACTLY matches the shape and silhouette from the sketch
+            2. Uses the exact colors and fabric texture from the reference image
+            3. Professional studio lighting on clean white background
+            4. High-end fashion product photography style"""
+            
+            contents = [
+                types.Part.from_bytes(data=sketch_bytes, mime_type="image/png"),
+                types.Part.from_bytes(data=ref_bytes, mime_type="image/png"),
+                prompt
+            ]
+        else:
+            prompt = """You are a professional fashion designer and textile expert. Transform these input images into a PHOTOREALISTIC garment:
+                INPUT 1 (SKETCH): The exact SILHOUETTE and SHAPE to follow
+                INPUT 2 (REFERENCE): The COLOR, TEXTURE, and FABRIC TYPE to use
 
-        prompt_text = (
-            "You are a fashion design assistant. The user has drawn a clothing sketch.\n"
-            "Analyze it and respond ONLY with a JSON object:\n"
-            "{\n"
-            "  \"garmentType\": \"short type label e.g. Dress, Jacket, T-Shirt\",\n"
-            "  \"description\": \"2-3 sentence vivid description of the garment\",\n"
-            "  \"imagePrompt\": \"detailed prompt for generating a photorealistic version of this garment\"\n"
-            "}"
-        )
+                REQUIREMENTS FOR OUTPUT:
+                - EXACT silhouette match to the sketch - every curve, proportion, and line
+                - Photorealistic fabric rendering with visible texture (weave, knit, or sheen)
+                - Proper fabric draping and gravity-affected folds
+                - Realistic lighting with soft shadows and highlights
+                - Clean pure white background (RGB 255,255,255)
+                - Professional studio lighting: key light at 45 degrees, fill light, rim light
+                - High resolution, sharp focus, 8K quality
+                - No mannequin or body visible - garment only (flat lay or invisible hanger)
+                - Seamless, continuous fabric with no awkward warping
+                - Natural fabric behavior at seams, hems, and edges
 
+                TECHNICAL DETAILS:
+                - Fabric weight appropriate for garment type
+                - Thread tension and stitch details visible on close inspection
+                - Natural color saturation (not over-saturated)
+                - Realistic shadow casting on the white background
+                - No artifacts, blurring, or AI distortions
+
+                OUTPUT: A single high-quality PNG image of the realistic garment."""
+            
+            contents = [
+                types.Part.from_bytes(data=sketch_bytes, mime_type="image/png"),
+                prompt
+            ]
+        
         response = client.models.generate_content(
-            model=GEMINI_IMAGE_MODEL,
-            contents=[pil_image, prompt_text],
+            model="gemini-2.5-flash-image",  
+            contents=contents,
             config=types.GenerateContentConfig(
-                response_mime_type="application/json",
+                response_modalities=["IMAGE", "TEXT"],
             ),
         )
-
-        try:
-            analysis_data = json.loads(response.text)
-        except json.JSONDecodeError:
-            cleaned_text = response.text.replace("```json", "").replace("```", "").strip()
-            analysis_data = json.loads(cleaned_text)
-
-        return Response(analysis_data, status=status.HTTP_200_OK)
-
+        
+        image_data = None
+        if response.candidates:
+            for part in response.candidates[0].content.parts:
+                if hasattr(part, 'inline_data') and part.inline_data:
+                    image_data = part.inline_data.data
+                    break
+        
+        if not image_data:
+            text_response = ""
+            if response.candidates:
+                for part in response.candidates[0].content.parts:
+                    if hasattr(part, 'text') and part.text:
+                        text_response += part.text
+            return Response({
+                "error": "No image generated. Gemini returned text instead.",
+                "debug_response": text_response[:500]
+            }, status=500)
+        
+        result_b64 = base64.b64encode(image_data).decode('utf-8')
+        
+        return Response({
+            "success": True,
+            "image_url": f"data:image/png;base64,{result_b64}",
+        }, status=200)
+        
     except Exception as e:
-        logger.error(f"Error during design generation: {str(e)}")
-        return Response(
-            {"error": "Internal server error during AI analysis."}, 
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
+        logger.error(f"Error: {str(e)}", exc_info=True)
+        return Response({"error": str(e)}, status=500)

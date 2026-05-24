@@ -9,12 +9,12 @@
     margin: 0 auto;
 }
 
-// ── Header ──────────────────────────────────────────────────────────────────
 .pageHeader {
     display: flex;
     align-items: center;
     gap: 14px;
     margin-bottom: 24px;
+    flex-wrap: wrap;
 }
 
 .iconCircle {
@@ -36,23 +36,37 @@
     font-weight: 700 !important;
     color: #1e1b4b !important;
     letter-spacing: -0.3px;
+
+    @media (max-width: 640px) {
+        font-size: 18px !important;
+    }
 }
 
 .subtitle {
     margin: 2px 0 0 !important;
     font-size: 13px !important;
     color: #6b7280 !important;
+
+    @media (max-width: 640px) {
+        font-size: 11px !important;
+    }
 }
 
-// ── Layout ───────────────────────────────────────────────────────────────────
 .editorLayout {
     display: flex;
     gap: 16px;
     align-items: flex-start;
     flex-wrap: wrap;
+
+    @media (max-width: 1024px) {
+        gap: 12px;
+    }
+
+    @media (max-width: 768px) {
+        flex-direction: column;
+    }
 }
 
-// ── Sidebar toolbar ──────────────────────────────────────────────────────────
 .toolbar {
     width: 148px;
     flex-shrink: 0;
@@ -63,12 +77,34 @@
     display: flex;
     flex-direction: column;
     gap: 18px;
+
+    @media (max-width: 768px) {
+        width: 100%;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 12px;
+    }
+
+    @media (max-width: 480px) {
+        gap: 8px;
+        padding: 10px;
+    }
 }
 
 .toolGroup {
     display: flex;
     flex-direction: column;
     gap: 6px;
+
+    @media (max-width: 768px) {
+        flex: 1;
+        min-width: 120px;
+    }
+
+    @media (max-width: 480px) {
+        min-width: calc(50% - 10px);
+    }
 }
 
 .toolLabel {
@@ -99,6 +135,16 @@
         background: #f0f0ff;
         border-color: #c4b5fd;
     }
+
+    @media (max-width: 480px) {
+        padding: 6px 8px;
+        font-size: 11px;
+
+        svg {
+            width: 14px;
+            height: 14px;
+        }
+    }
 }
 
 .toolBtnActive {
@@ -107,7 +153,6 @@
     color: #7c3aed !important;
 }
 
-// Brush size
 .sizeRow {
     display: flex;
     align-items: center;
@@ -130,6 +175,11 @@
 
     &:hover {
         background: #e5e7eb;
+    }
+
+    @media (max-width: 480px) {
+        width: 22px;
+        height: 22px;
     }
 }
 
@@ -159,7 +209,6 @@
         background 0.15s;
 }
 
-// Colors
 .colorGrid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -179,6 +228,11 @@
 
     &:hover {
         transform: scale(1.15);
+    }
+
+    @media (max-width: 480px) {
+        width: 20px;
+        height: 20px;
     }
 }
 
@@ -203,15 +257,23 @@
     border-radius: 4px;
     cursor: pointer;
     background: none;
+
+    @media (max-width: 480px) {
+        width: 20px;
+        height: 20px;
+    }
 }
 
 .colorHex {
     font-size: 10px;
     color: #6b7280;
     font-family: monospace;
+
+    @media (max-width: 480px) {
+        font-size: 8px;
+    }
 }
 
-// Action buttons
 .actionBtn {
     display: flex;
     align-items: center;
@@ -231,9 +293,18 @@
         background: #f3f4f6;
         border-color: #d1d5db;
     }
+
+    @media (max-width: 480px) {
+        padding: 5px 8px;
+        font-size: 10px;
+
+        svg {
+            width: 12px;
+            height: 12px;
+        }
+    }
 }
 
-// ── Canvas area ──────────────────────────────────────────────────────────────
 .canvasArea {
     flex: 1;
     min-width: 300px;
@@ -244,11 +315,13 @@
 
 .canvas {
     width: 100%;
+    height: auto;
     display: block;
     border-radius: 16px;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
     touch-action: none;
     background: #fafaf8;
+    aspect-ratio: 700 / 520;
 }
 
 .cursorPen {
@@ -259,7 +332,6 @@
     cursor: cell;
 }
 
-// Submit row
 .submitRow {
     display: flex;
     gap: 10px;
@@ -292,6 +364,18 @@
         cursor: not-allowed;
         transform: none;
     }
+
+    @media (max-width: 480px) {
+        flex: 1;
+        justify-content: center;
+        padding: 8px 12px;
+        font-size: 12px;
+
+        svg {
+            width: 12px;
+            height: 12px;
+        }
+    }
 }
 
 .btnAI {
@@ -302,12 +386,20 @@
     background: linear-gradient(135deg, #0f766e, #0d9488);
 }
 
-// Status banners
+.btnGenerate {
+    background: linear-gradient(135deg, #7c3aed, #6d28d9);
+}
+
 .statusBanner {
     padding: 10px 16px;
     border-radius: 10px;
     font-size: 13px;
     font-weight: 500;
+
+    @media (max-width: 480px) {
+        padding: 8px 12px;
+        font-size: 11px;
+    }
 }
 
 .statusSuccess {
@@ -320,28 +412,65 @@
     color: #991b1b;
 }
 
-// ── AI result panel ──────────────────────────────────────────────────────────
-.resultPanel {
-    width: 240px;
-    flex-shrink: 0;
+.generatedResult {
+    width: 100%;
     background: #fff;
     border-radius: 16px;
     padding: 16px 14px;
     box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
-    align-self: flex-start;
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    @media (max-width: 768px) {
+        padding: 12px;
+        margin-top: 12px;
+    }
+
+    @media (max-width: 480px) {
+        padding: 10px;
+        gap: 10px;
+    }
 }
 
 .resultTitle {
     display: flex;
     align-items: center;
     gap: 6px;
-    margin: 0 0 12px;
-    font-size: 13px;
+    margin: 0;
+    font-size: 14px;
     font-weight: 700;
     color: #1e1b4b;
+
+    &::before {
+        content: "✨";
+        font-size: 16px;
+    }
+
+    @media (max-width: 480px) {
+        font-size: 12px;
+    }
 }
 
-// Loading dots
+.generatedImg {
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+    display: block;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+    aspect-ratio: 700 / 520;
+    object-fit: cover;
+
+    @media (max-width: 768px) {
+        border-radius: 10px;
+    }
+
+    @media (max-width: 480px) {
+        border-radius: 8px;
+    }
+}
+
 .loadingDots {
     display: flex;
     gap: 6px;

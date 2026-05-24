@@ -34,8 +34,6 @@ DEBUG = True
 
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://diploma-project-788181191989.us-central1.run.app',
-    'http://diploma-project-788181191989.us-central1.run.app',
     'http://localhost:8000', 
     'http://127.0.0.1:8000', 
     'https://run.app'
@@ -47,12 +45,12 @@ ALLOWED_HOSTS = ['*']
 
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOWED_ORIGINS = [
-    'https://diploma-project-788181191989.us-central1.run.app',
     'http://localhost:8000',
     'http://127.0.0.1:8000',
 ]
 CORS_ALLOW_CREDENTIALS = True
-GS_BUCKET_NAME = 'stilno-tryon-results'
+GS_BUCKET_NAME = 'stilno-tryon-results1'
+GS_DEFAULT_ACL = None
 
 
 # Application definition

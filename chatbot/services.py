@@ -12,14 +12,12 @@ _agent_executor = None
 _session_history = []
 
 def _init_agent():
-    """Ленивая инициализация агента - только когда реально нужен"""
     global _llm, _agent_executor
     
     if _agent_executor is not None:
         return True
     
     try:
-        # Импортируем только внутри функции
         from langchain_groq import ChatGroq
         from langchain_classic.agents import create_tool_calling_agent, AgentExecutor
         from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -81,7 +79,6 @@ def _init_agent():
         return False
 
 def search_csv_directly(query):
-    """Поиск товаров в CSV"""
     csv_path = os.path.join(settings.BASE_DIR, 'products.csv')
     
     if not os.path.exists(csv_path):
@@ -125,7 +122,6 @@ def search_csv_directly(query):
         return f"CSV окууда ката: {e}"
 
 def format_with_buttons(text):
-    """Добавляет кнопки к ответу"""
     match = re.search(r"ID[:\s]*(\d+)", text, re.IGNORECASE)
     id = match.group(1) if match else None
 
@@ -147,12 +143,9 @@ def format_with_buttons(text):
     return html_content
 
 def get_shopping_response(message):
-    """Получение ответа от чат-бота"""
     global _session_history
     
-    # Пробуем инициализировать агента
     if not _init_agent():
-        # Fallback если агент не доступен
         logger.warning("Using fallback response - agent not available")
         
         message_lower = message.lower()

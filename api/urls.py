@@ -29,7 +29,7 @@ urlpatterns = [
     
     path('products/search/', views.search_products, name='product-search'),
     
-    path('generate-design/', views.generate_design, name='generate_design'),
+    path('generate-cloth-image/', views.generate_cloth_image, name='generate_cloth_image'),
 ]
 
 if settings.DEBUG:

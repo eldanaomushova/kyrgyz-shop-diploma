@@ -1,7 +1,7 @@
 import axios from "axios";
 
 export const requester = axios.create({
-    baseURL: "https://diploma-project-788181191989.us-central1.run.app/",
+    baseURL: "http://localhost:8000/",
     timeout: 60000,
     headers: {
         "Content-Type": "application/json",

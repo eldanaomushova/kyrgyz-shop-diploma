@@ -1,5 +1,4 @@
 import datetime 
-from datetime import timedelta 
 import os
 import time
 import tempfile
@@ -7,9 +6,7 @@ import logging
 from django.conf import settings
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
-from PIL import Image, ImageDraw
-import shutil
-from django.http import JsonResponse, FileResponse
+from django.http import JsonResponse
 import vertexai
 from google.cloud import aiplatform, storage
 import requests
@@ -17,7 +14,6 @@ import base64
 from google.oauth2 import service_account
 import google.auth.transport.requests
 import google.auth
-from io import BytesIO
 import uuid
 
 logger = logging.getLogger(__name__)
@@ -59,7 +55,6 @@ def get_access_token():
         return None
 
 def upload_to_gcs(file_path, destination_blob_name):
-    """Upload a file and return a secure Signed URL"""
     try:
         if not bucket:
             return None
@@ -79,7 +74,6 @@ def upload_to_gcs(file_path, destination_blob_name):
         return None
 
 def upload_bytes_to_gcs(image_bytes, destination_blob_name, content_type='image/jpeg'):
-    """Upload bytes directly to Google Cloud Storage"""
     try:
         if not bucket:
             logger.error("GCS bucket not initialized")

@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework import status
 from django.db import models
-from ..serializers import ProductSerializer  # ← исправлен импорт
+from ..serializers import ProductSerializer
 from ..models import Product
 
 logger = logging.getLogger(__name__)
@@ -110,7 +110,6 @@ def clothing_questionnaire(request):
             if occasion_config.get('article_types'):
                 query = query.filter(articleType__in=occasion_config['article_types'])
             
-            # Body type filter
             if body_type and body_type in BODY_TYPE_MAPPING:
                 silhouette_filter = BODY_TYPE_MAPPING[body_type]
                 silhouette_condition = models.Q()
@@ -120,7 +119,6 @@ def clothing_questionnaire(request):
                 if query.filter(silhouette_condition).exists():
                     query = query.filter(silhouette_condition)
             
-            # Color filter
             if preferred_colors:
                 color_condition = models.Q()
                 for color in preferred_colors:
@@ -134,7 +132,6 @@ def clothing_questionnaire(request):
                 else:
                     logger.info(f"No products matched color filter, skipping color...")
             
-            # Budget filter
             if budget:
                 if budget == 'low':
                     query = query.filter(price__lte=2000)

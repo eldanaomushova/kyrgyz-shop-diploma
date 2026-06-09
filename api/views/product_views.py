@@ -101,7 +101,6 @@ def get_product_detail(request, pk):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Ищем продукт
         product = get_object_or_404(Product, id=id)
         serializer = ProductSerializer(product)
         return Response(serializer.data)
@@ -158,7 +157,6 @@ def get_available_filters(request):
             ]
         }
         
-        # Сортируем списки для удобства
         for key in ['genders', 'master_categories', 'sub_categories', 
                     'article_types', 'colors', 'seasons', 'usages']:
             filters[key] = sorted(filters[key])
@@ -182,7 +180,6 @@ def get_product_stats(request):
         products_with_color = Product.objects.exclude(color__isnull=True).exclude(color='').count()
         products_with_price = Product.objects.exclude(price__isnull=True).exclude(price=0).count()
         
-        # Get price range
         price_stats = Product.objects.aggregate(
             min_price=models.Min('price'),
             max_price=models.Max('price'),

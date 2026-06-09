@@ -1,4 +1,4 @@
 from django.contrib import admin
-from .models import Product # или как называется ваша модель
+from .models import Product
 
 admin.site.register(Product)

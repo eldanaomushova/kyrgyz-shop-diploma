@@ -2,7 +2,7 @@ from rest_framework.response import Response
 from ..models import Product, CartItem
 from rest_framework import status
 from dotenv import load_dotenv 
-from rest_framework.decorators import api_view, permission_classes, authentication_classes
+from rest_framework.decorators import api_view
 load_dotenv()
 
 

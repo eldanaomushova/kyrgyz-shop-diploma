@@ -13,8 +13,6 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 from pathlib import Path
 
-import dj_database_url
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 IN_CLOUD_RUN = os.environ.get('CLOUD_RUN', 'False') == 'False'
 

@@ -10,10 +10,6 @@ from rest_framework.decorators import api_view, permission_classes, authenticati
 load_dotenv()
 
 def clean_phone_number(phone):
-    """
-    Clean and format phone number to +996XXXXXXXXX format
-    Accepts: +996701234567, 0701234567, 701234567
-    """
     phone = str(phone)
     import re
     cleaned = re.sub(r'[^\d+]', '', phone)
@@ -32,17 +28,6 @@ def clean_phone_number(phone):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def initiate_payment(request):
-    """
-    Initiate payment through Mbank
-    User receives push notification on phone and confirms with PIN
-    
-    Expected POST data:
-    {
-        "amount": 5000,
-        "phone_number": "+996701234567",
-        "payment_method": "mbank"
-    }
-    """
     try:
         data = request.data
         amount = data.get('amount')

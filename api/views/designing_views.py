@@ -7,18 +7,26 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from django.views.decorators.csrf import csrf_exempt
 from google import genai
 from google.genai import types
+import json
+from google.oauth2 import service_account
 
 logger = logging.getLogger(__name__)
 
 def get_vertex_client():
-    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-        'google_key.json'
-    )
+    creds_json_str = os.environ.get('GOOGLE_CREDENTIALS_JSON')
+    
+    if not creds_json_str:
+        raise Exception("GOOGLE_CREDENTIALS_JSON is not set in Railway variables")
+
+    creds_info = json.loads(creds_json_str)
+    
+    credentials = service_account.Credentials.from_service_account_info(creds_info)
+    
     return genai.Client(
         vertexai=True,
-        project='my-second-project-497114',
-        location='us-central1'
+        project=creds_info.get('project_id'), 
+        location='us-central1',
+        credentials=credentials
     )
 
 

@@ -9,6 +9,8 @@ from django.views.decorators.csrf import csrf_exempt
 from google import genai
 from google.genai import types
 import tempfile
+import json
+from google.oauth2 import service_account
 
 logger = logging.getLogger(__name__)
 
@@ -42,11 +44,6 @@ def remove_background_from_bytes(image_bytes: bytes, api_key: str) -> bytes | No
 @parser_classes([MultiPartParser, FormParser])
 def extract_garment_view(request):
     try:
-        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-            'google_key.json'
-        )
-
         product_image = request.FILES.get('product_image')
         garment_type = request.data.get('garment_type', 'garment')
 

@@ -278,6 +278,17 @@ export const Header = () => {
                                     Virtual Try-On
                                 </button>
                             </li>
+                            <li>
+                                <button
+                                    onClick={() =>
+                                        handleNavigation(PATH.designClothes)
+                                    }
+                                    className={styles.virtualTryOnBtn}
+                                >
+                                    <Pencil size={18} />
+                                    Кийимди дизайндоо
+                                </button>
+                            </li>
                         </ul>
                     </div>
 

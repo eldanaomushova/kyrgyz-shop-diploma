@@ -15,81 +15,110 @@ from google.oauth2 import service_account
 import google.auth.transport.requests
 import google.auth
 import uuid
+from PIL import Image
 
 logger = logging.getLogger(__name__)
-from google.oauth2 import service_account
-
-KEY_PATH = "/Users/eldanaomusova/Desktop/Projects/Diploma-Project/google_key.json" 
 
 try:
-    credentials = service_account.Credentials.from_service_account_file(KEY_PATH)
-    
-    storage_client = storage.Client(
-        project='my-second-project-497114', 
-        credentials=credentials
+    credentials, project = google.auth.default(
+        scopes=["https://www.googleapis.com/auth/cloud-platform"]
     )
-    
+
+    key_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+    if key_path:
+        signing_credentials = service_account.Credentials.from_service_account_file(
+            key_path,
+            scopes=["https://www.googleapis.com/auth/cloud-platform"]
+        )
+    else:
+        signing_credentials = credentials
+
+    storage_client = storage.Client(
+        project='my-second-project-497114',
+        credentials=signing_credentials
+    )
+
     BUCKET_NAME = 'stilno-tryon-results1'
     bucket = storage_client.bucket(BUCKET_NAME)
-    logger.info("GCS initialized successfully with Private Key for signing.")
+    logger.info("GCS initialized successfully using GOOGLE_APPLICATION_CREDENTIALS.")
 except Exception as e:
     logger.error(f"Failed to initialize GCS: {e}")
     bucket = None
+
 
 def get_access_token():
     try:
         credentials, project = google.auth.default(
             scopes=["https://www.googleapis.com/auth/cloud-platform"]
         )
-        
+
         auth_request = google.auth.transport.requests.Request()
         credentials.refresh(auth_request)
-        
+
         if not credentials.valid:
             logger.error("Credentials are not valid after refresh")
             return None
-            
+
         return credentials.token
     except Exception as e:
         logger.error(f"Failed to get access token: {e}", exc_info=True)
         return None
 
+
 def upload_to_gcs(file_path, destination_blob_name):
     try:
         if not bucket:
             return None
-            
+
         blob = bucket.blob(destination_blob_name)
         blob.upload_from_filename(file_path)
-        url = blob.generate_signed_url(
-            version="v4",
-            expiration=datetime.timedelta(minutes=60), 
-            method="GET",
-        )
-        
-        logger.info(f"File uploaded. Signed URL generated: {url}")
+
+        key_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+        if key_path:
+            signing_creds = service_account.Credentials.from_service_account_file(key_path)
+            url = blob.generate_signed_url(
+                version="v4",
+                expiration=datetime.timedelta(minutes=60),
+                method="GET",
+                credentials=signing_creds,
+            )
+        else:
+            blob.make_public()
+            url = blob.public_url
+
+        logger.info(f"File uploaded. URL generated: {url}")
         return url
     except Exception as e:
         logger.error(f"Failed to upload to GCS: {e}")
         return None
+
 
 def upload_bytes_to_gcs(image_bytes, destination_blob_name, content_type='image/jpeg'):
     try:
         if not bucket:
             logger.error("GCS bucket not initialized")
             return None
-            
+
         blob = bucket.blob(destination_blob_name)
         blob.upload_from_string(image_bytes, content_type=content_type)
-        
+
         blob.make_public()
-        
+
         public_url = blob.public_url
         logger.info(f"Bytes uploaded to GCS: {public_url}")
         return public_url
     except Exception as e:
         logger.error(f"Failed to upload bytes to GCS: {e}")
         return None
+
+
+try:
+    project_id = 'my-second-project-497114'
+    aiplatform.init(project=project_id, location='us-central1')
+    vertexai.init(project=project_id, location='us-central1')
+    logger.info("Vertex AI initialized successfully")
+except Exception as e:
+    logger.warning(f"Vertex AI initialization failed: {e}")
 
 try:
     aiplatform.init(

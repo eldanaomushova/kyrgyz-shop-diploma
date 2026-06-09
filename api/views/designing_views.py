@@ -7,26 +7,47 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from django.views.decorators.csrf import csrf_exempt
 from google import genai
 from google.genai import types
+import google.auth.transport.requests
 import json
 from google.oauth2 import service_account
 
 logger = logging.getLogger(__name__)
 
-def get_vertex_client():
-    creds_json_str = os.environ.get('GOOGLE_CREDENTIALS_JSON')
-    
-    if not creds_json_str:
-        raise Exception("GOOGLE_CREDENTIALS_JSON is not set in Railway variables")
 
-    creds_info = json.loads(creds_json_str)
-    
-    credentials = service_account.Credentials.from_service_account_info(creds_info)
-    
+def get_vertex_client() -> genai.Client:
+    creds_json_str = os.environ.get('GOOGLE_CREDENTIALS_JSON')
+    if creds_json_str:
+        creds_info = json.loads(creds_json_str)
+        credentials = service_account.Credentials.from_service_account_info(
+            creds_info,
+            scopes=["https://www.googleapis.com/auth/cloud-platform"],
+        )
+        project_id = creds_info.get('project_id')
+
+    else:
+        key_path = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
+        if not key_path:
+            raise EnvironmentError(
+                "Set either GOOGLE_CREDENTIALS_JSON (Railway) "
+                "or GOOGLE_APPLICATION_CREDENTIALS (local) env var."
+            )
+        import json as _json
+        with open(key_path) as f:
+            creds_info = _json.load(f)
+        credentials = service_account.Credentials.from_service_account_file(
+            key_path,
+            scopes=["https://www.googleapis.com/auth/cloud-platform"],
+        )
+        project_id = creds_info.get('project_id')
+
+    auth_request = google.auth.transport.requests.Request()
+    credentials.refresh(auth_request)
+
     return genai.Client(
         vertexai=True,
-        project=creds_info.get('project_id'), 
+        project=project_id,
         location='us-central1',
-        credentials=credentials
+        credentials=credentials,
     )
 
 

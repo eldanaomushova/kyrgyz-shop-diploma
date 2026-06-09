@@ -8,11 +8,30 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from django.views.decorators.csrf import csrf_exempt
 from google import genai
 from google.genai import types
+import google.auth
+import google.auth.transport.requests
 import tempfile
-import json
-from google.oauth2 import service_account
 
 logger = logging.getLogger(__name__)
+
+
+def _get_genai_client() -> genai.Client:
+    """
+    Build a Vertex AI genai Client using GOOGLE_APPLICATION_CREDENTIALS.
+    Falls back to google.auth.default() (ADC) when running on GCP.
+    """
+    credentials, _ = google.auth.default(
+        scopes=["https://www.googleapis.com/auth/cloud-platform"]
+    )
+    auth_request = google.auth.transport.requests.Request()
+    credentials.refresh(auth_request)
+
+    return genai.Client(
+        vertexai=True,
+        project='my-second-project-497114',
+        location='us-central1',
+        credentials=credentials,
+    )
 
 
 def remove_background_from_bytes(image_bytes: bytes, api_key: str) -> bytes | None:
@@ -53,11 +72,7 @@ def extract_garment_view(request):
         image_bytes = product_image.read()
         mime_type = product_image.content_type or 'image/jpeg'
 
-        client = genai.Client(
-            vertexai=True,
-            project='my-second-project-497114',
-            location='us-central1'
-        )
+        client = _get_genai_client()
 
         logger.info("Generating studio photo via Gemini image generation...")
 
@@ -69,7 +84,7 @@ def extract_garment_view(request):
         )
 
         response = client.models.generate_content(
-            model='gemini-2.5-flash-image',  
+            model='gemini-2.5-flash-image',
             contents=[
                 types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
                 prompt,
